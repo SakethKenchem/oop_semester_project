@@ -482,32 +482,32 @@ public class AdminDashboard extends JFrame {
 
         try (Connection con = DBConnection.getConnection()) {
 
-            // 1. Get list of directories to delete before truncating the table
+            //Gets the list of directories to delete before truncating the table
             try (PreparedStatement ps = con.prepareStatement("SELECT photo_path FROM candidates")) {
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     String path = rs.getString("photo_path");
-                    // Assuming photo_path is "manifesto/Candidate_Name/photo.jpg"
+
                     File photoFile = new File(path);
                     File candidateDir = photoFile.getParentFile();
 
                     if (candidateDir != null) {
-                        deleteDirectory(candidateDir); // Call recursive delete
+                        deleteDirectory(candidateDir);
                     }
                 }
             }
 
-            // 2. Delete all votes and reset auto-increment
+            // Deletes all votes and reset auto-increment
             try (PreparedStatement psVotes = con.prepareStatement("TRUNCATE TABLE votes")) {
                 psVotes.executeUpdate();
             }
 
-            // 3. Delete all candidates and reset auto-increment
+            //Deletes all candidates and reset auto-increment
             try (PreparedStatement psCandidates = con.prepareStatement("TRUNCATE TABLE candidates")) {
                 psCandidates.executeUpdate();
             }
 
-            // 4. Reset voting window status
+            //Resets voting window status
             String resetSql = "UPDATE voting_window SET is_active=0, results_released=0";
             try (PreparedStatement psWindow = con.prepareStatement(resetSql)) {
                 psWindow.executeUpdate();

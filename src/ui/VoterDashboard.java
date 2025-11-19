@@ -67,9 +67,9 @@ public class VoterDashboard extends JFrame {
         setVisible(true);
     }
 
-    // Consolidated method for content loading and UI refresh
+    // method for content loading and UI refresh
     private void loadContent() {
-        this.mainPanel.removeAll(); // Clear panel once
+        this.mainPanel.removeAll();
 
         if (VotingUtil.isResultsReleased()) {
             this.titleLabel.setText("Official Election Results");
@@ -79,8 +79,8 @@ public class VoterDashboard extends JFrame {
             loadCandidates();
         }
 
-        this.mainPanel.revalidate(); // Refresh UI once
-        this.mainPanel.repaint();    // Refresh UI once
+        this.mainPanel.revalidate();
+        this.mainPanel.repaint();
     }
 
     private void loadCandidates() {
@@ -103,7 +103,7 @@ public class VoterDashboard extends JFrame {
 
             boolean votingOpen = VotingUtil.isVotingOpen();
 
-            for (String pos : POSITIONS) { // Use static constant
+            for (String pos : POSITIONS) {
                 JPanel posPanel = new JPanel();
                 posPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
                 posPanel.setBorder(BorderFactory.createTitledBorder(
@@ -130,18 +130,18 @@ public class VoterDashboard extends JFrame {
     }
 
     /**
-     * Loads the election results by running a dedicated SQL query for the winner of each position.
+     * Loads the election results and displays the winners in each position
      */
     private void loadResults() {
 
         try (Connection con = DBConnection.getConnection()) {
 
-            // Query 1: Find the winner's candidate_id and total_votes for a specific position
+            // Finds the winner's candidate_id and total_votes for a specific position
             String winnerSql = "SELECT candidate_id, COUNT(id) AS total_votes " +
                     "FROM votes WHERE position = ? " +
                     "GROUP BY candidate_id ORDER BY total_votes DESC LIMIT 1";
 
-            // Query 2: Get the full candidate details based on the winner's ID
+            //Gets the full candidate details based on the winner's ID
             String candidateSql = "SELECT * FROM candidates WHERE id = ?";
 
             PreparedStatement psWinner = con.prepareStatement(winnerSql);
@@ -155,7 +155,7 @@ public class VoterDashboard extends JFrame {
                         int winnerId = rsWinner.getInt("candidate_id");
                         int maxVotes = rsWinner.getInt("total_votes");
 
-                        // Fetch Candidate details
+                        // Fetches Candidate details
                         psCandidate.setInt(1, winnerId);
                         try (ResultSet rsCandidate = psCandidate.executeQuery()) {
                             if (rsCandidate.next()) {
@@ -173,7 +173,7 @@ public class VoterDashboard extends JFrame {
                             }
                         }
                     } else {
-                        // Display for positions with no votes/candidates
+                        //
                         JPanel posPanel = new JPanel();
                         posPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
                         posPanel.setBorder(BorderFactory.createTitledBorder(
@@ -193,7 +193,7 @@ public class VoterDashboard extends JFrame {
         }
     }
 
-    // Method to create a panel for the winner of a position
+    // A panel for the winner of a position
     private JPanel createWinnerPanel(String position, Candidate c, int votes) {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout(10, 10));
@@ -205,14 +205,14 @@ public class VoterDashboard extends JFrame {
         panel.setMaximumSize(new Dimension(850, 300));
         panel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Left: Picture
+
         ImageIcon icon = new ImageIcon(c.getPhotoPath());
         Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
         JLabel picLabel = new JLabel(new ImageIcon(img));
         picLabel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         panel.add(picLabel, BorderLayout.WEST);
 
-        // Center: Info
+
         JTextArea info = new JTextArea(
                 "Name: " + c.getFullName() +
                         "\nSchool: " + c.getSchool() +
@@ -308,7 +308,7 @@ public class VoterDashboard extends JFrame {
     }
 
     private void castVote(Candidate c) {
-        // Double-check voting window on server
+        // checks the voting window on server
         if (!VotingUtil.isVotingOpen()) {
             JOptionPane.showMessageDialog(this, "Voting is currently closed.");
             return;
