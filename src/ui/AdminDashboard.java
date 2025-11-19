@@ -31,7 +31,7 @@ public class AdminDashboard extends JFrame {
     private JButton btnActivate, btnDeactivate, btnLoadWindow;
     private JLabel lblWindowStatus;
 
-    // NEW: Results control fields
+    //Results control fields
     private JButton btnReleaseResults, btnHideResults;
     private JLabel lblResultsStatus;
 
@@ -139,15 +139,15 @@ public class AdminDashboard extends JFrame {
 
         split.setLeftComponent(left);
 
-        // RIGHT - Control Panels Container (Modified)
+        // RIGHT section - Control Panels Container (Modified)
         JPanel rightContainer = new JPanel();
         rightContainer.setLayout(new BoxLayout(rightContainer, BoxLayout.Y_AXIS));
 
-        // TOP RIGHT - Voting control panel
+        // TOP RIGHT section - Voting control panel
         JPanel votingControl = createVotingControlPanel();
         rightContainer.add(votingControl);
 
-        // BOTTOM RIGHT - Results control panel
+        // BOTTOM RIGHT section - Results control panel
         JPanel resultsControl = createResultsControlPanel();
         rightContainer.add(Box.createVerticalStrut(15)); // Spacer
         rightContainer.add(resultsControl);
@@ -161,7 +161,6 @@ public class AdminDashboard extends JFrame {
         setVisible(true);
     }
 
-    // Extracted voting control panel creation into a method
     private JPanel createVotingControlPanel() {
         JPanel right = new JPanel(new GridBagLayout());
         right.setBorder(BorderFactory.createTitledBorder("Voting Window Control"));
@@ -193,7 +192,7 @@ public class AdminDashboard extends JFrame {
         rc.gridx = 1; rc.gridy = r++; rc.weightx = 1.0;
         right.add(tfEndTime, rc);
 
-        // Buttons: Activate / Deactivate / Load
+        // Buttons to Activate / Deactivate / Load
         btnActivate = new JButton("Activate Window");
         btnActivate.addActionListener(e -> activateWindow());
         btnDeactivate = new JButton("Deactivate Window");
@@ -210,7 +209,6 @@ public class AdminDashboard extends JFrame {
         right.add(pButtons, rc);
         r++;
 
-        // Hint label
         rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
         JLabel hint = new JLabel("<html><i>Note: times must be in server timezone.<br/>Format: yyyy-MM-dd HH:mm:ss</i></html>");
         right.add(hint, rc);
@@ -218,7 +216,7 @@ public class AdminDashboard extends JFrame {
         return right;
     }
 
-    // NEW: Results control panel
+    //Results control panel
     private JPanel createResultsControlPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Election Results Control"));
@@ -236,7 +234,7 @@ public class AdminDashboard extends JFrame {
         panel.add(lblResultsStatus, rc);
         r++;
 
-        // Buttons: Release / Hide
+        // Buttons to Release / Hide the results
         btnReleaseResults = new JButton("Release Results");
         btnReleaseResults.addActionListener(e -> releaseResults());
         btnHideResults = new JButton("Hide Results");
@@ -253,8 +251,6 @@ public class AdminDashboard extends JFrame {
         return panel;
     }
 
-
-    // ----- Candidate helpers (unchanged) -----
     private void selectPicture() {
         JFileChooser fc = new JFileChooser();
         int res = fc.showOpenDialog(this);
@@ -287,7 +283,7 @@ public class AdminDashboard extends JFrame {
         }
 
         try (Connection con = DBConnection.getConnection()) {
-            // Create folder for candidate inside "manifesto"
+            // Creates a folder for candidate inside "manifesto"
             String baseDir = "manifesto/" + fullName.replaceAll(" ", "_");
             new File(baseDir).mkdirs();
 
@@ -330,11 +326,9 @@ public class AdminDashboard extends JFrame {
     }
 
 
-    // ----- Voting control methods (modified loadWindow) -----
     private void loadWindow() {
-        // load active window row and update UI
         try (Connection con = DBConnection.getConnection()) {
-            // Modified SQL to fetch results_released
+
             String sql = "SELECT id, start_time, end_time, is_active, results_released FROM voting_window ORDER BY id LIMIT 1";
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
@@ -376,7 +370,7 @@ public class AdminDashboard extends JFrame {
             }
 
             try (Connection con = DBConnection.getConnection()) {
-                // If table empty, insert; otherwise update first row
+                // If the table empty, insert into it; otherwise update first row
                 String checkSql = "SELECT id FROM voting_window ORDER BY id LIMIT 1";
                 PreparedStatement psCheck = con.prepareStatement(checkSql);
                 ResultSet rs = psCheck.executeQuery();
@@ -429,7 +423,7 @@ public class AdminDashboard extends JFrame {
         }
     }
 
-    // NEW: Results control methods
+    // Results release methods
     private void releaseResults() {
         int confirm = JOptionPane.showConfirmDialog(this,
                 "Are you sure you want to release the election results? Voters will see the winners.",
@@ -453,7 +447,7 @@ public class AdminDashboard extends JFrame {
 
         if (confirm != JOptionPane.YES_OPTION) return;
 
-        // Use VotingUtil to update the status in DB
+        // VotingUtil to update the status in DB
         if (VotingUtil.updateResultsReleaseStatus(false)) {
             JOptionPane.showMessageDialog(this, "Election results hidden successfully!");
             loadWindow();

@@ -33,17 +33,17 @@ public class VoterDashboard extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Panel for NORTH region (Title)
+
         this.titleLabel = new JLabel("Student Council Candidates", SwingConstants.CENTER);
         this.titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         add(this.titleLabel, BorderLayout.NORTH);
 
-        // Panel for SOUTH region (Logout + Refresh)
+
         JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
         // --- Refresh Button ---
         JButton btnRefresh = new JButton("Refresh");
-        btnRefresh.addActionListener(e -> loadContent()); // Calls the new switching method
+        btnRefresh.addActionListener(e -> loadContent());
         southPanel.add(btnRefresh);
 
         // --- Logout Button ---
@@ -54,7 +54,7 @@ public class VoterDashboard extends JFrame {
         add(southPanel, BorderLayout.SOUTH); // Add the button panel to the frame
 
 
-        // Panel for CENTER region (Scrollable Content)
+
         this.mainPanel = new JPanel();
         this.mainPanel.setLayout(new BoxLayout(this.mainPanel, BoxLayout.Y_AXIS));
         JScrollPane scrollPane = new JScrollPane(this.mainPanel);
@@ -66,7 +66,7 @@ public class VoterDashboard extends JFrame {
         setVisible(true);
     }
 
-    // NEW: Method to switch content based on results status
+
     private void loadContent() {
         if (VotingUtil.isResultsReleased()) {
             this.titleLabel.setText("Official Election Results");
@@ -134,13 +134,13 @@ public class VoterDashboard extends JFrame {
         }
     }
 
-    // RESTORED: Method to load and display results
+    //load and display results
     private void loadResults() {
         this.mainPanel.removeAll();
 
         try (Connection con = DBConnection.getConnection()) {
 
-            // 1. Get all positions and the corresponding winner candidate ID and vote count
+
             String resultsSql = "SELECT position, candidate_id, COUNT(id) as total_votes " +
                     "FROM votes GROUP BY position, candidate_id ORDER BY position, total_votes DESC";
             ResultSet rsResults = con.createStatement().executeQuery(resultsSql);
@@ -155,7 +155,7 @@ public class VoterDashboard extends JFrame {
                         .add(Map.entry(candidateId, totalVotes));
             }
 
-            // 2. Fetch all candidates for lookups
+
             Map<Integer, Candidate> candidateMap = new HashMap<>();
             ResultSet rsCandidates = con.createStatement().executeQuery("SELECT * FROM candidates");
             while(rsCandidates.next()) {
@@ -180,9 +180,9 @@ public class VoterDashboard extends JFrame {
 
             for (String pos : positions) {
                 if (groupedResults.containsKey(pos)) {
-                    // Find the candidate(s) with the highest vote count for this position
+
                     List<Map.Entry<Integer, Integer>> candidatesForPos = groupedResults.get(pos);
-                    // Sort to put the winner (max votes) first
+
                     candidatesForPos.sort(Map.Entry.comparingByValue(Comparator.reverseOrder()));
 
                     int winnerId = candidatesForPos.get(0).getKey();
@@ -193,7 +193,7 @@ public class VoterDashboard extends JFrame {
                         this.mainPanel.add(createWinnerPanel(pos, winner, maxVotes));
                     }
                 } else {
-                    // Display for positions with no votes/candidates
+
                     JPanel posPanel = new JPanel();
                     posPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
                     posPanel.setBorder(BorderFactory.createTitledBorder(
@@ -215,7 +215,7 @@ public class VoterDashboard extends JFrame {
         }
     }
 
-    // RESTORED: Method to create a panel for the winner of a position
+    // panel for the winner of a position
     private JPanel createWinnerPanel(String position, Candidate c, int votes) {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout(10, 10));
@@ -227,14 +227,13 @@ public class VoterDashboard extends JFrame {
         panel.setMaximumSize(new Dimension(850, 300));
         panel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Left: Picture
+
         ImageIcon icon = new ImageIcon(c.getPhotoPath());
         Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
         JLabel picLabel = new JLabel(new ImageIcon(img));
         picLabel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         panel.add(picLabel, BorderLayout.WEST);
 
-        // Center: Info
         JTextArea info = new JTextArea(
                 "Name: " + c.getFullName() +
                         "\nSchool: " + c.getSchool() +
@@ -248,7 +247,7 @@ public class VoterDashboard extends JFrame {
         info.setFont(new Font("Arial", Font.PLAIN, 14));
         panel.add(info, BorderLayout.CENTER);
 
-        // Right: Vote Count and Manifesto Button
+        // Vote Count and Manifesto Button
         JPanel eastPanel = new JPanel(new BorderLayout());
 
         JLabel voteLabel = new JLabel("<html><center><b>Total Votes:<br>" + votes + "</b></center></html>", SwingConstants.CENTER);
@@ -331,7 +330,6 @@ public class VoterDashboard extends JFrame {
     }
 
     private void castVote(Candidate c) {
-        // Double-check voting window on server
         if (!VotingUtil.isVotingOpen()) {
             JOptionPane.showMessageDialog(this, "Voting is currently closed.");
             return;

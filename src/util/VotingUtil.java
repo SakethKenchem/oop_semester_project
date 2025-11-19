@@ -14,7 +14,7 @@ public class VotingUtil {
         public final LocalDateTime start;
         public final LocalDateTime end;
         public final boolean active;
-        public final boolean resultsReleased; // Re-added field
+        public final boolean resultsReleased;
 
         public VotingWindow(LocalDateTime start, LocalDateTime end, boolean active, boolean resultsReleased) {
             this.start = start;
@@ -25,7 +25,7 @@ public class VotingUtil {
     }
 
     /**
-     * Returns the active voting window and control status (is_active, results_released).
+     * Returns the active voting window and control status
      */
     public static VotingWindow getActiveWindow() {
         try (Connection con = DBConnection.getConnection()) {
@@ -50,7 +50,7 @@ public class VotingUtil {
     }
 
     /**
-     * Quick check: is current time inside the active window?
+     *is current time inside the active window?
      */
     public static boolean isVotingOpen() {
         try {
@@ -65,7 +65,7 @@ public class VotingUtil {
     }
 
     /**
-     * New check: are the election results released?
+     *are the election results released?
      */
     public static boolean isResultsReleased() {
         try {
@@ -77,10 +77,6 @@ public class VotingUtil {
         }
     }
 
-    /**
-     * New method to update the results_released status.
-     * @param released true to release, false to hide.
-     */
     public static boolean updateResultsReleaseStatus(boolean released) {
         try (Connection con = DBConnection.getConnection()) {
             String checkSql = "SELECT id FROM voting_window LIMIT 1";
