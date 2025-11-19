@@ -7,6 +7,7 @@ import util.VotingUtil;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -14,11 +15,10 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.Comparator;
 
 public class AdminDashboard extends JFrame {
 
-    // Candidate fields (left panel)
     private JTextField tfFullName, tfAcademicYear, tfSchool;
     private JTextArea taBio;
     private JComboBox<String> cbPosition;
@@ -26,16 +26,21 @@ public class AdminDashboard extends JFrame {
     private File selectedPicture, selectedManifesto;
     private JButton btnUploadPicture, btnUploadManifesto, btnSave;
 
-    // Voting control (right panel)
     private JTextField tfStartTime, tfEndTime;
     private JButton btnActivate, btnDeactivate, btnLoadWindow;
     private JLabel lblWindowStatus;
 
-    //Results control fields
     private JButton btnReleaseResults, btnHideResults;
     private JLabel lblResultsStatus;
 
+    private JButton btnPrepareNewElection;
+
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String[] POSITIONS = {
+            "Chairperson","Vice Chairperson","Secretary General","Finance Rep",
+            "Public Relations","Male Academic Rep","Female Academic Rep",
+            "Male Sports Rep","Female Sports Rep"
+    };
 
     public AdminDashboard(String adminUsername) {
         setTitle("Admin Dashboard - Logged in as: " + adminUsername);
@@ -43,18 +48,40 @@ public class AdminDashboard extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        // Top: header
         JLabel header = new JLabel("Upload Candidate, Voting & Results Control", SwingConstants.CENTER);
         header.setFont(new Font("Arial", Font.BOLD, 20));
         header.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         add(header, BorderLayout.NORTH);
 
-        // Center: split pane with candidate form (left) and control panels (right)
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         split.setResizeWeight(0.65);
         add(split, BorderLayout.CENTER);
 
-        // LEFT - Candidate upload panel
+        JPanel left = createCandidateUploadPanel();
+        split.setLeftComponent(left);
+
+        JPanel rightContainer = new JPanel();
+        rightContainer.setLayout(new BoxLayout(rightContainer, BoxLayout.Y_AXIS));
+
+        JPanel votingControl = createVotingControlPanel();
+        rightContainer.add(votingControl);
+
+        JPanel resultsControl = createResultsControlPanel();
+        rightContainer.add(Box.createVerticalStrut(15));
+        rightContainer.add(resultsControl);
+
+        JPanel systemControl = createSystemControlPanel();
+        rightContainer.add(Box.createVerticalStrut(15));
+        rightContainer.add(systemControl);
+
+        split.setRightComponent(rightContainer);
+
+        loadWindow();
+
+        setVisible(true);
+    }
+
+    private JPanel createCandidateUploadPanel() {
         JPanel left = new JPanel(new GridBagLayout());
         left.setBorder(BorderFactory.createTitledBorder("Upload Candidate"));
         GridBagConstraints gc = new GridBagConstraints();
@@ -63,39 +90,31 @@ public class AdminDashboard extends JFrame {
         gc.fill = GridBagConstraints.HORIZONTAL;
 
         int row = 0;
-        // Full Name
+
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
         left.add(new JLabel("Full Name:"), gc);
         tfFullName = new JTextField();
         gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
         left.add(tfFullName, gc);
 
-        // Academic Year
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
         left.add(new JLabel("Academic Year:"), gc);
         tfAcademicYear = new JTextField();
         gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
         left.add(tfAcademicYear, gc);
 
-        // School
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
         left.add(new JLabel("School:"), gc);
         tfSchool = new JTextField();
         gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
         left.add(tfSchool, gc);
 
-        // Position
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
         left.add(new JLabel("Position:"), gc);
-        cbPosition = new JComboBox<>(new String[]{
-                "Chairperson","Vice Chairperson","Secretary General","Finance Rep",
-                "Public Relations","Male Academic Rep","Female Academic Rep",
-                "Male Sports Rep","Female Sports Rep"
-        });
+        cbPosition = new JComboBox<>(POSITIONS);
         gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
         left.add(cbPosition, gc);
 
-        // Picture label + button
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
         left.add(new JLabel("Picture:"), gc);
         JPanel pPic = new JPanel(new BorderLayout(6,0));
@@ -107,7 +126,6 @@ public class AdminDashboard extends JFrame {
         gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
         left.add(pPic, gc);
 
-        // Manifesto label + button
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
         left.add(new JLabel("Manifesto:"), gc);
         JPanel pMan = new JPanel(new BorderLayout(6,0));
@@ -119,7 +137,6 @@ public class AdminDashboard extends JFrame {
         gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
         left.add(pMan, gc);
 
-        // Bio
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
         left.add(new JLabel("Bio:"), gc);
         taBio = new JTextArea(6, 20);
@@ -129,7 +146,6 @@ public class AdminDashboard extends JFrame {
         gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
         left.add(spBio, gc);
 
-        // Save button
         btnSave = new JButton("Save Candidate");
         btnSave.addActionListener(e -> saveCandidate());
         JPanel pSave = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -137,28 +153,7 @@ public class AdminDashboard extends JFrame {
         gc.gridx = 0; gc.gridy = row; gc.gridwidth = 2;
         left.add(pSave, gc);
 
-        split.setLeftComponent(left);
-
-        // RIGHT section - Control Panels Container (Modified)
-        JPanel rightContainer = new JPanel();
-        rightContainer.setLayout(new BoxLayout(rightContainer, BoxLayout.Y_AXIS));
-
-        // TOP RIGHT section - Voting control panel
-        JPanel votingControl = createVotingControlPanel();
-        rightContainer.add(votingControl);
-
-        // BOTTOM RIGHT section - Results control panel
-        JPanel resultsControl = createResultsControlPanel();
-        rightContainer.add(Box.createVerticalStrut(15)); // Spacer
-        rightContainer.add(resultsControl);
-
-
-        split.setRightComponent(rightContainer);
-
-        // load current window on open
-        loadWindow();
-
-        setVisible(true);
+        return left;
     }
 
     private JPanel createVotingControlPanel() {
@@ -170,14 +165,12 @@ public class AdminDashboard extends JFrame {
         rc.fill = GridBagConstraints.HORIZONTAL;
 
         int r = 0;
-        // Current status
         rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
         lblWindowStatus = new JLabel("Status: unknown");
         lblWindowStatus.setFont(new Font("Arial", Font.BOLD, 14));
         right.add(lblWindowStatus, rc);
         r++;
 
-        // Start time
         rc.gridwidth = 1;
         rc.gridx = 0; rc.gridy = r;
         right.add(new JLabel("Start (yyyy-MM-dd HH:mm:ss):"), rc);
@@ -185,14 +178,12 @@ public class AdminDashboard extends JFrame {
         rc.gridx = 1; rc.gridy = r++; rc.weightx = 1.0;
         right.add(tfStartTime, rc);
 
-        // End time
         rc.gridx = 0; rc.gridy = r;
         right.add(new JLabel("End (yyyy-MM-dd HH:mm:ss):"), rc);
         tfEndTime = new JTextField();
         rc.gridx = 1; rc.gridy = r++; rc.weightx = 1.0;
         right.add(tfEndTime, rc);
 
-        // Buttons to Activate / Deactivate / Load
         btnActivate = new JButton("Activate Window");
         btnActivate.addActionListener(e -> activateWindow());
         btnDeactivate = new JButton("Deactivate Window");
@@ -216,7 +207,6 @@ public class AdminDashboard extends JFrame {
         return right;
     }
 
-    //Results control panel
     private JPanel createResultsControlPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Election Results Control"));
@@ -227,14 +217,12 @@ public class AdminDashboard extends JFrame {
 
         int r = 0;
 
-        // Current status
         rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
         lblResultsStatus = new JLabel("Results: unknown");
         lblResultsStatus.setFont(new Font("Arial", Font.BOLD, 14));
         panel.add(lblResultsStatus, rc);
         r++;
 
-        // Buttons to Release / Hide the results
         btnReleaseResults = new JButton("Release Results");
         btnReleaseResults.addActionListener(e -> releaseResults());
         btnHideResults = new JButton("Hide Results");
@@ -250,6 +238,34 @@ public class AdminDashboard extends JFrame {
 
         return panel;
     }
+
+    private JPanel createSystemControlPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("System Maintenance"));
+        GridBagConstraints rc = new GridBagConstraints();
+        rc.insets = new Insets(8,8,8,8);
+        rc.anchor = GridBagConstraints.WEST;
+        rc.fill = GridBagConstraints.HORIZONTAL;
+
+        int r = 0;
+
+        btnPrepareNewElection = new JButton("PREPARE NEW ELECTION");
+        btnPrepareNewElection.setBackground(Color.RED);
+        btnPrepareNewElection.setForeground(Color.WHITE);
+        btnPrepareNewElection.setFont(new Font("Arial", Font.BOLD, 14));
+        btnPrepareNewElection.addActionListener(e -> prepareNewElection());
+
+        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 1; rc.weightx = 1.0;
+        panel.add(btnPrepareNewElection, rc);
+        r++;
+
+        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 1; rc.weightx = 1.0;
+        JLabel warning = new JLabel("<html><i style='color:red;'>WARNING: This deletes ALL candidates/votes and resets the window.</i></html>", SwingConstants.CENTER);
+        panel.add(warning, rc);
+
+        return panel;
+    }
+
 
     private void selectPicture() {
         JFileChooser fc = new JFileChooser();
@@ -283,7 +299,6 @@ public class AdminDashboard extends JFrame {
         }
 
         try (Connection con = DBConnection.getConnection()) {
-            // Creates a folder for candidate inside "manifesto"
             String baseDir = "manifesto/" + fullName.replaceAll(" ", "_");
             new File(baseDir).mkdirs();
 
@@ -292,7 +307,6 @@ public class AdminDashboard extends JFrame {
             Files.copy(selectedPicture.toPath(), new File(picPath).toPath());
             Files.copy(selectedManifesto.toPath(), new File(manifestoPath).toPath());
 
-            // Candidate object including id = 0 (auto-increment in DB)
             Candidate candidate = new Candidate(0, fullName, year, school, position, picPath, manifestoPath, bio);
 
             String sql = "INSERT INTO candidates(full_name,academic_year,school,position,photo_path,manifesto_path,bio) VALUES(?,?,?,?,?,?,?)";
@@ -308,7 +322,6 @@ public class AdminDashboard extends JFrame {
 
             JOptionPane.showMessageDialog(this, "Candidate uploaded successfully!");
 
-            // Reset form
             tfFullName.setText("");
             tfAcademicYear.setText("");
             tfSchool.setText("");
@@ -328,7 +341,6 @@ public class AdminDashboard extends JFrame {
 
     private void loadWindow() {
         try (Connection con = DBConnection.getConnection()) {
-
             String sql = "SELECT id, start_time, end_time, is_active, results_released FROM voting_window ORDER BY id LIMIT 1";
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
@@ -336,20 +348,20 @@ public class AdminDashboard extends JFrame {
                 Timestamp tsStart = rs.getTimestamp("start_time");
                 Timestamp tsEnd = rs.getTimestamp("end_time");
                 boolean active = rs.getInt("is_active") == 1;
-                boolean released = rs.getInt("results_released") == 1; // New fetch
+                boolean released = rs.getInt("results_released") == 1;
 
                 tfStartTime.setText(tsStart.toLocalDateTime().format(DTF));
                 tfEndTime.setText(tsEnd.toLocalDateTime().format(DTF));
                 lblWindowStatus.setText("Status: " + (active ? "ACTIVE" : "INACTIVE"));
-                lblResultsStatus.setText("Results: " + (released ? "RELEASED" : "HIDDEN")); // New status update
+                lblResultsStatus.setText("Results: " + (released ? "RELEASED" : "HIDDEN"));
             } else {
                 lblWindowStatus.setText("Status: not set");
-                lblResultsStatus.setText("Results: not set"); // New status update
+                lblResultsStatus.setText("Results: not set");
             }
         } catch (Exception ex) {
             ex.printStackTrace();
             lblWindowStatus.setText("Status: error");
-            lblResultsStatus.setText("Results: error"); // New status update
+            lblResultsStatus.setText("Results: error");
         }
     }
 
@@ -370,7 +382,6 @@ public class AdminDashboard extends JFrame {
             }
 
             try (Connection con = DBConnection.getConnection()) {
-                // If the table empty, insert into it; otherwise update first row
                 String checkSql = "SELECT id FROM voting_window ORDER BY id LIMIT 1";
                 PreparedStatement psCheck = con.prepareStatement(checkSql);
                 ResultSet rs = psCheck.executeQuery();
@@ -396,7 +407,6 @@ public class AdminDashboard extends JFrame {
         } catch (java.time.format.DateTimeParseException dtpe) {
             JOptionPane.showMessageDialog(this, "Bad date format. Use yyyy-MM-dd HH:mm:ss");
         } catch (Exception ex) {
-            ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error activating window: " + ex.getMessage());
         }
     }
@@ -418,12 +428,10 @@ public class AdminDashboard extends JFrame {
                 JOptionPane.showMessageDialog(this, "No voting window to deactivate.");
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error deactivating window: " + ex.getMessage());
         }
     }
 
-    // Results release methods
     private void releaseResults() {
         int confirm = JOptionPane.showConfirmDialog(this,
                 "Are you sure you want to release the election results? Voters will see the winners.",
@@ -431,7 +439,6 @@ public class AdminDashboard extends JFrame {
 
         if (confirm != JOptionPane.YES_OPTION) return;
 
-        // Use VotingUtil to update the status in DB
         if (VotingUtil.updateResultsReleaseStatus(true)) {
             JOptionPane.showMessageDialog(this, "Election results released successfully!");
             loadWindow();
@@ -447,12 +454,71 @@ public class AdminDashboard extends JFrame {
 
         if (confirm != JOptionPane.YES_OPTION) return;
 
-        // VotingUtil to update the status in DB
         if (VotingUtil.updateResultsReleaseStatus(false)) {
             JOptionPane.showMessageDialog(this, "Election results hidden successfully!");
             loadWindow();
         } else {
             JOptionPane.showMessageDialog(this, "Error hiding results.");
+        }
+    }
+
+    private static void deleteDirectory(File directory) throws IOException {
+        if (!directory.exists()) return;
+
+        Files.walk(directory.toPath())
+                .sorted(Comparator.reverseOrder())
+                .map(java.nio.file.Path::toFile)
+                .forEach(File::delete);
+    }
+
+    private void prepareNewElection() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "ARE YOU SURE? This will permanently delete ALL votes, ALL candidate data, and ALL manifesto folders.\n(Voter accounts will be kept intact.)",
+                "CONFIRM DATA AND FOLDER DELETION",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        try (Connection con = DBConnection.getConnection()) {
+
+            // 1. Get list of directories to delete before truncating the table
+            try (PreparedStatement ps = con.prepareStatement("SELECT photo_path FROM candidates")) {
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    String path = rs.getString("photo_path");
+                    // Assuming photo_path is "manifesto/Candidate_Name/photo.jpg"
+                    File photoFile = new File(path);
+                    File candidateDir = photoFile.getParentFile();
+
+                    if (candidateDir != null) {
+                        deleteDirectory(candidateDir); // Call recursive delete
+                    }
+                }
+            }
+
+            // 2. Delete all votes and reset auto-increment
+            try (PreparedStatement psVotes = con.prepareStatement("TRUNCATE TABLE votes")) {
+                psVotes.executeUpdate();
+            }
+
+            // 3. Delete all candidates and reset auto-increment
+            try (PreparedStatement psCandidates = con.prepareStatement("TRUNCATE TABLE candidates")) {
+                psCandidates.executeUpdate();
+            }
+
+            // 4. Reset voting window status
+            String resetSql = "UPDATE voting_window SET is_active=0, results_released=0";
+            try (PreparedStatement psWindow = con.prepareStatement(resetSql)) {
+                psWindow.executeUpdate();
+            }
+
+            JOptionPane.showMessageDialog(this, "System successfully prepared for a new election.\n(Candidates, Votes, and Folders deleted, Window reset.)");
+            loadWindow();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error preparing new election: " + ex.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

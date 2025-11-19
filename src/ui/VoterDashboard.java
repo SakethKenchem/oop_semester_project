@@ -13,16 +13,19 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class VoterDashboard extends JFrame {
 
     private int voterId;
     private JLabel titleLabel;
     private JPanel mainPanel;
+
+    // Centralized constant for all positions
+    private static final String[] POSITIONS = {
+            "Chairperson","Vice Chairperson","Secretary General","Finance Rep",
+            "Public Relations","Male Academic Rep","Female Academic Rep",
+            "Male Sports Rep","Female Sports Rep"
+    };
 
     public VoterDashboard(int voterId) {
         this.voterId = voterId;
@@ -33,12 +36,12 @@ public class VoterDashboard extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-
+        // Panel for NORTH region (Title)
         this.titleLabel = new JLabel("Student Council Candidates", SwingConstants.CENTER);
         this.titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         add(this.titleLabel, BorderLayout.NORTH);
 
-
+        // Panel for SOUTH region (Logout + Refresh)
         JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
         // --- Refresh Button ---
@@ -51,23 +54,23 @@ public class VoterDashboard extends JFrame {
         btnLogout.addActionListener(e -> dispose());
         southPanel.add(btnLogout);
 
-        add(southPanel, BorderLayout.SOUTH); // Add the button panel to the frame
+        add(southPanel, BorderLayout.SOUTH);
 
-
-
+        // Panel for CENTER region (Scrollable Content)
         this.mainPanel = new JPanel();
         this.mainPanel.setLayout(new BoxLayout(this.mainPanel, BoxLayout.Y_AXIS));
         JScrollPane scrollPane = new JScrollPane(this.mainPanel);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         add(scrollPane, BorderLayout.CENTER);
 
-        loadContent();
+        loadContent(); // Initial content load
 
         setVisible(true);
     }
 
-
+    // Consolidated method for content loading and UI refresh
     private void loadContent() {
+        this.mainPanel.removeAll(); // Clear panel once
+
         if (VotingUtil.isResultsReleased()) {
             this.titleLabel.setText("Official Election Results");
             loadResults();
@@ -75,6 +78,9 @@ public class VoterDashboard extends JFrame {
             this.titleLabel.setText("Student Council Candidates");
             loadCandidates();
         }
+
+        this.mainPanel.revalidate(); // Refresh UI once
+        this.mainPanel.repaint();    // Refresh UI once
     }
 
     private void loadCandidates() {
@@ -95,17 +101,9 @@ public class VoterDashboard extends JFrame {
                 ));
             }
 
-            String[] positions = {
-                    "Chairperson","Vice Chairperson","Secretary General","Finance Rep",
-                    "Public Relations","Male Academic Rep","Female Academic Rep",
-                    "Male Sports Rep","Female Sports Rep"
-            };
-
-            this.mainPanel.removeAll();
-
             boolean votingOpen = VotingUtil.isVotingOpen();
 
-            for (String pos : positions) {
+            for (String pos : POSITIONS) { // Use static constant
                 JPanel posPanel = new JPanel();
                 posPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
                 posPanel.setBorder(BorderFactory.createTitledBorder(
@@ -125,89 +123,69 @@ public class VoterDashboard extends JFrame {
                 if (hasCandidate) this.mainPanel.add(posPanel);
             }
 
-            this.mainPanel.revalidate();
-            this.mainPanel.repaint();
-
         } catch (Exception e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error loading candidates: " + e.getMessage());
         }
     }
 
-    //load and display results
+    /**
+     * Loads the election results by running a dedicated SQL query for the winner of each position.
+     */
     private void loadResults() {
-        this.mainPanel.removeAll();
 
         try (Connection con = DBConnection.getConnection()) {
 
+            // Query 1: Find the winner's candidate_id and total_votes for a specific position
+            String winnerSql = "SELECT candidate_id, COUNT(id) AS total_votes " +
+                    "FROM votes WHERE position = ? " +
+                    "GROUP BY candidate_id ORDER BY total_votes DESC LIMIT 1";
 
-            String resultsSql = "SELECT position, candidate_id, COUNT(id) as total_votes " +
-                    "FROM votes GROUP BY position, candidate_id ORDER BY position, total_votes DESC";
-            ResultSet rsResults = con.createStatement().executeQuery(resultsSql);
+            // Query 2: Get the full candidate details based on the winner's ID
+            String candidateSql = "SELECT * FROM candidates WHERE id = ?";
 
-            Map<String, List<Map.Entry<Integer, Integer>>> groupedResults = new HashMap<>();
-            while (rsResults.next()) {
-                String position = rsResults.getString("position");
-                int candidateId = rsResults.getInt("candidate_id");
-                int totalVotes = rsResults.getInt("total_votes");
+            PreparedStatement psWinner = con.prepareStatement(winnerSql);
+            PreparedStatement psCandidate = con.prepareStatement(candidateSql);
 
-                groupedResults.computeIfAbsent(position, k -> new ArrayList<>())
-                        .add(Map.entry(candidateId, totalVotes));
-            }
+            for (String pos : POSITIONS) { // Use static constant
+                psWinner.setString(1, pos);
 
+                try (ResultSet rsWinner = psWinner.executeQuery()) {
+                    if (rsWinner.next()) {
+                        int winnerId = rsWinner.getInt("candidate_id");
+                        int maxVotes = rsWinner.getInt("total_votes");
 
-            Map<Integer, Candidate> candidateMap = new HashMap<>();
-            ResultSet rsCandidates = con.createStatement().executeQuery("SELECT * FROM candidates");
-            while(rsCandidates.next()) {
-                Candidate c = new Candidate(
-                        rsCandidates.getInt("id"),
-                        rsCandidates.getString("full_name"),
-                        rsCandidates.getString("academic_year"),
-                        rsCandidates.getString("school"),
-                        rsCandidates.getString("position"),
-                        rsCandidates.getString("photo_path"),
-                        rsCandidates.getString("manifesto_path"),
-                        rsCandidates.getString("bio")
-                );
-                candidateMap.put(c.getId(), c);
-            }
-
-            String[] positions = {
-                    "Chairperson","Vice Chairperson","Secretary General","Finance Rep",
-                    "Public Relations","Male Academic Rep","Female Academic Rep",
-                    "Male Sports Rep","Female Sports Rep"
-            };
-
-            for (String pos : positions) {
-                if (groupedResults.containsKey(pos)) {
-
-                    List<Map.Entry<Integer, Integer>> candidatesForPos = groupedResults.get(pos);
-
-                    candidatesForPos.sort(Map.Entry.comparingByValue(Comparator.reverseOrder()));
-
-                    int winnerId = candidatesForPos.get(0).getKey();
-                    int maxVotes = candidatesForPos.get(0).getValue();
-
-                    Candidate winner = candidateMap.get(winnerId);
-                    if (winner != null) {
-                        this.mainPanel.add(createWinnerPanel(pos, winner, maxVotes));
+                        // Fetch Candidate details
+                        psCandidate.setInt(1, winnerId);
+                        try (ResultSet rsCandidate = psCandidate.executeQuery()) {
+                            if (rsCandidate.next()) {
+                                Candidate winner = new Candidate(
+                                        rsCandidate.getInt("id"),
+                                        rsCandidate.getString("full_name"),
+                                        rsCandidate.getString("academic_year"),
+                                        rsCandidate.getString("school"),
+                                        rsCandidate.getString("position"),
+                                        rsCandidate.getString("photo_path"),
+                                        rsCandidate.getString("manifesto_path"),
+                                        rsCandidate.getString("bio")
+                                );
+                                this.mainPanel.add(createWinnerPanel(pos, winner, maxVotes));
+                            }
+                        }
+                    } else {
+                        // Display for positions with no votes/candidates
+                        JPanel posPanel = new JPanel();
+                        posPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+                        posPanel.setBorder(BorderFactory.createTitledBorder(
+                                BorderFactory.createLineBorder(Color.BLACK),
+                                pos, TitledBorder.LEFT, TitledBorder.TOP,
+                                new Font("Arial", Font.BOLD, 16)
+                        ));
+                        posPanel.add(new JLabel("No votes recorded for this position."));
+                        this.mainPanel.add(posPanel);
                     }
-                } else {
-
-                    JPanel posPanel = new JPanel();
-                    posPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-                    posPanel.setBorder(BorderFactory.createTitledBorder(
-                            BorderFactory.createLineBorder(Color.BLACK),
-                            pos, TitledBorder.LEFT, TitledBorder.TOP,
-                            new Font("Arial", Font.BOLD, 16)
-                    ));
-                    posPanel.add(new JLabel("No votes recorded for this position or no candidate."));
-                    this.mainPanel.add(posPanel);
                 }
             }
-
-            this.mainPanel.revalidate();
-            this.mainPanel.repaint();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -215,7 +193,7 @@ public class VoterDashboard extends JFrame {
         }
     }
 
-    // panel for the winner of a position
+    // Method to create a panel for the winner of a position
     private JPanel createWinnerPanel(String position, Candidate c, int votes) {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout(10, 10));
@@ -227,13 +205,14 @@ public class VoterDashboard extends JFrame {
         panel.setMaximumSize(new Dimension(850, 300));
         panel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-
+        // Left: Picture
         ImageIcon icon = new ImageIcon(c.getPhotoPath());
         Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
         JLabel picLabel = new JLabel(new ImageIcon(img));
         picLabel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         panel.add(picLabel, BorderLayout.WEST);
 
+        // Center: Info
         JTextArea info = new JTextArea(
                 "Name: " + c.getFullName() +
                         "\nSchool: " + c.getSchool() +
@@ -244,10 +223,9 @@ public class VoterDashboard extends JFrame {
         info.setLineWrap(true);
         info.setWrapStyleWord(true);
         info.setBackground(null);
-        info.setFont(new Font("Arial", Font.PLAIN, 14));
         panel.add(info, BorderLayout.CENTER);
 
-        // Vote Count and Manifesto Button
+        // Right: Vote Count and Manifesto Button
         JPanel eastPanel = new JPanel(new BorderLayout());
 
         JLabel voteLabel = new JLabel("<html><center><b>Total Votes:<br>" + votes + "</b></center></html>", SwingConstants.CENTER);
@@ -330,6 +308,7 @@ public class VoterDashboard extends JFrame {
     }
 
     private void castVote(Candidate c) {
+        // Double-check voting window on server
         if (!VotingUtil.isVotingOpen()) {
             JOptionPane.showMessageDialog(this, "Voting is currently closed.");
             return;
