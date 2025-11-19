@@ -1,0 +1,464 @@
+package ui;
+
+import database.DBConnection;
+import models.Candidate;
+import util.VotingUtil;
+
+import javax.swing.*;
+import java.awt.*;
+import java.io.File;
+import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+
+public class AdminDashboard extends JFrame {
+
+    // Candidate fields (left panel)
+    private JTextField tfFullName, tfAcademicYear, tfSchool;
+    private JTextArea taBio;
+    private JComboBox<String> cbPosition;
+    private JLabel lblPicture, lblManifesto;
+    private File selectedPicture, selectedManifesto;
+    private JButton btnUploadPicture, btnUploadManifesto, btnSave;
+
+    // Voting control (right panel)
+    private JTextField tfStartTime, tfEndTime;
+    private JButton btnActivate, btnDeactivate, btnLoadWindow;
+    private JLabel lblWindowStatus;
+
+    // NEW: Results control fields
+    private JButton btnReleaseResults, btnHideResults;
+    private JLabel lblResultsStatus;
+
+    private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    public AdminDashboard(String adminUsername) {
+        setTitle("Admin Dashboard - Logged in as: " + adminUsername);
+        setSize(950, 700);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+        // Top: header
+        JLabel header = new JLabel("Upload Candidate, Voting & Results Control", SwingConstants.CENTER);
+        header.setFont(new Font("Arial", Font.BOLD, 20));
+        header.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+        add(header, BorderLayout.NORTH);
+
+        // Center: split pane with candidate form (left) and control panels (right)
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        split.setResizeWeight(0.65);
+        add(split, BorderLayout.CENTER);
+
+        // LEFT - Candidate upload panel
+        JPanel left = new JPanel(new GridBagLayout());
+        left.setBorder(BorderFactory.createTitledBorder("Upload Candidate"));
+        GridBagConstraints gc = new GridBagConstraints();
+        gc.insets = new Insets(6,6,6,6);
+        gc.anchor = GridBagConstraints.WEST;
+        gc.fill = GridBagConstraints.HORIZONTAL;
+
+        int row = 0;
+        // Full Name
+        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
+        left.add(new JLabel("Full Name:"), gc);
+        tfFullName = new JTextField();
+        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
+        left.add(tfFullName, gc);
+
+        // Academic Year
+        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
+        left.add(new JLabel("Academic Year:"), gc);
+        tfAcademicYear = new JTextField();
+        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
+        left.add(tfAcademicYear, gc);
+
+        // School
+        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
+        left.add(new JLabel("School:"), gc);
+        tfSchool = new JTextField();
+        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
+        left.add(tfSchool, gc);
+
+        // Position
+        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
+        left.add(new JLabel("Position:"), gc);
+        cbPosition = new JComboBox<>(new String[]{
+                "Chairperson","Vice Chairperson","Secretary General","Finance Rep",
+                "Public Relations","Male Academic Rep","Female Academic Rep",
+                "Male Sports Rep","Female Sports Rep"
+        });
+        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
+        left.add(cbPosition, gc);
+
+        // Picture label + button
+        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
+        left.add(new JLabel("Picture:"), gc);
+        JPanel pPic = new JPanel(new BorderLayout(6,0));
+        lblPicture = new JLabel("No picture selected");
+        btnUploadPicture = new JButton("Choose...");
+        btnUploadPicture.addActionListener(e -> selectPicture());
+        pPic.add(lblPicture, BorderLayout.CENTER);
+        pPic.add(btnUploadPicture, BorderLayout.EAST);
+        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
+        left.add(pPic, gc);
+
+        // Manifesto label + button
+        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
+        left.add(new JLabel("Manifesto:"), gc);
+        JPanel pMan = new JPanel(new BorderLayout(6,0));
+        lblManifesto = new JLabel("No manifesto selected");
+        btnUploadManifesto = new JButton("Choose...");
+        btnUploadManifesto.addActionListener(e -> selectManifesto());
+        pMan.add(lblManifesto, BorderLayout.CENTER);
+        pMan.add(btnUploadManifesto, BorderLayout.EAST);
+        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
+        left.add(pMan, gc);
+
+        // Bio
+        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
+        left.add(new JLabel("Bio:"), gc);
+        taBio = new JTextArea(6, 20);
+        taBio.setLineWrap(true);
+        taBio.setWrapStyleWord(true);
+        JScrollPane spBio = new JScrollPane(taBio);
+        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
+        left.add(spBio, gc);
+
+        // Save button
+        btnSave = new JButton("Save Candidate");
+        btnSave.addActionListener(e -> saveCandidate());
+        JPanel pSave = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        pSave.add(btnSave);
+        gc.gridx = 0; gc.gridy = row; gc.gridwidth = 2;
+        left.add(pSave, gc);
+
+        split.setLeftComponent(left);
+
+        // RIGHT - Control Panels Container (Modified)
+        JPanel rightContainer = new JPanel();
+        rightContainer.setLayout(new BoxLayout(rightContainer, BoxLayout.Y_AXIS));
+
+        // TOP RIGHT - Voting control panel
+        JPanel votingControl = createVotingControlPanel();
+        rightContainer.add(votingControl);
+
+        // BOTTOM RIGHT - Results control panel
+        JPanel resultsControl = createResultsControlPanel();
+        rightContainer.add(Box.createVerticalStrut(15)); // Spacer
+        rightContainer.add(resultsControl);
+
+
+        split.setRightComponent(rightContainer);
+
+        // load current window on open
+        loadWindow();
+
+        setVisible(true);
+    }
+
+    // Extracted voting control panel creation into a method
+    private JPanel createVotingControlPanel() {
+        JPanel right = new JPanel(new GridBagLayout());
+        right.setBorder(BorderFactory.createTitledBorder("Voting Window Control"));
+        GridBagConstraints rc = new GridBagConstraints();
+        rc.insets = new Insets(8,8,8,8);
+        rc.anchor = GridBagConstraints.WEST;
+        rc.fill = GridBagConstraints.HORIZONTAL;
+
+        int r = 0;
+        // Current status
+        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
+        lblWindowStatus = new JLabel("Status: unknown");
+        lblWindowStatus.setFont(new Font("Arial", Font.BOLD, 14));
+        right.add(lblWindowStatus, rc);
+        r++;
+
+        // Start time
+        rc.gridwidth = 1;
+        rc.gridx = 0; rc.gridy = r;
+        right.add(new JLabel("Start (yyyy-MM-dd HH:mm:ss):"), rc);
+        tfStartTime = new JTextField();
+        rc.gridx = 1; rc.gridy = r++; rc.weightx = 1.0;
+        right.add(tfStartTime, rc);
+
+        // End time
+        rc.gridx = 0; rc.gridy = r;
+        right.add(new JLabel("End (yyyy-MM-dd HH:mm:ss):"), rc);
+        tfEndTime = new JTextField();
+        rc.gridx = 1; rc.gridy = r++; rc.weightx = 1.0;
+        right.add(tfEndTime, rc);
+
+        // Buttons: Activate / Deactivate / Load
+        btnActivate = new JButton("Activate Window");
+        btnActivate.addActionListener(e -> activateWindow());
+        btnDeactivate = new JButton("Deactivate Window");
+        btnDeactivate.addActionListener(e -> deactivateWindow());
+        btnLoadWindow = new JButton("Refresh Status");
+        btnLoadWindow.addActionListener(e -> loadWindow());
+
+        JPanel pButtons = new JPanel(new GridLayout(1,3,8,8));
+        pButtons.add(btnActivate);
+        pButtons.add(btnDeactivate);
+        pButtons.add(btnLoadWindow);
+
+        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
+        right.add(pButtons, rc);
+        r++;
+
+        // Hint label
+        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
+        JLabel hint = new JLabel("<html><i>Note: times must be in server timezone.<br/>Format: yyyy-MM-dd HH:mm:ss</i></html>");
+        right.add(hint, rc);
+
+        return right;
+    }
+
+    // NEW: Results control panel
+    private JPanel createResultsControlPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Election Results Control"));
+        GridBagConstraints rc = new GridBagConstraints();
+        rc.insets = new Insets(8,8,8,8);
+        rc.anchor = GridBagConstraints.WEST;
+        rc.fill = GridBagConstraints.HORIZONTAL;
+
+        int r = 0;
+
+        // Current status
+        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
+        lblResultsStatus = new JLabel("Results: unknown");
+        lblResultsStatus.setFont(new Font("Arial", Font.BOLD, 14));
+        panel.add(lblResultsStatus, rc);
+        r++;
+
+        // Buttons: Release / Hide
+        btnReleaseResults = new JButton("Release Results");
+        btnReleaseResults.addActionListener(e -> releaseResults());
+        btnHideResults = new JButton("Hide Results");
+        btnHideResults.addActionListener(e -> hideResults());
+
+        JPanel pButtons = new JPanel(new GridLayout(1,2,8,8));
+        pButtons.add(btnReleaseResults);
+        pButtons.add(btnHideResults);
+
+        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
+        panel.add(pButtons, rc);
+        r++;
+
+        return panel;
+    }
+
+
+    // ----- Candidate helpers (unchanged) -----
+    private void selectPicture() {
+        JFileChooser fc = new JFileChooser();
+        int res = fc.showOpenDialog(this);
+        if (res == JFileChooser.APPROVE_OPTION) {
+            selectedPicture = fc.getSelectedFile();
+            lblPicture.setText(selectedPicture.getName());
+        }
+    }
+
+    private void selectManifesto() {
+        JFileChooser fc = new JFileChooser();
+        int res = fc.showOpenDialog(this);
+        if (res == JFileChooser.APPROVE_OPTION) {
+            selectedManifesto = fc.getSelectedFile();
+            lblManifesto.setText(selectedManifesto.getName());
+        }
+    }
+
+    private void saveCandidate() {
+        String fullName = tfFullName.getText().trim();
+        String year = tfAcademicYear.getText().trim();
+        String school = tfSchool.getText().trim();
+        String position = cbPosition.getSelectedItem().toString();
+        String bio = taBio.getText().trim();
+
+        if (fullName.isEmpty() || year.isEmpty() || school.isEmpty() || bio.isEmpty()
+                || selectedPicture == null || selectedManifesto == null) {
+            JOptionPane.showMessageDialog(this, "All fields and files are required!");
+            return;
+        }
+
+        try (Connection con = DBConnection.getConnection()) {
+            // Create folder for candidate inside "manifesto"
+            String baseDir = "manifesto/" + fullName.replaceAll(" ", "_");
+            new File(baseDir).mkdirs();
+
+            String picPath = baseDir + "/" + selectedPicture.getName();
+            String manifestoPath = baseDir + "/" + selectedManifesto.getName();
+            Files.copy(selectedPicture.toPath(), new File(picPath).toPath());
+            Files.copy(selectedManifesto.toPath(), new File(manifestoPath).toPath());
+
+            // Candidate object including id = 0 (auto-increment in DB)
+            Candidate candidate = new Candidate(0, fullName, year, school, position, picPath, manifestoPath, bio);
+
+            String sql = "INSERT INTO candidates(full_name,academic_year,school,position,photo_path,manifesto_path,bio) VALUES(?,?,?,?,?,?,?)";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, candidate.getFullName());
+            ps.setString(2, candidate.getAcademicYear());
+            ps.setString(3, candidate.getSchool());
+            ps.setString(4, candidate.getPosition());
+            ps.setString(5, candidate.getPhotoPath());
+            ps.setString(6, candidate.getManifestoPath());
+            ps.setString(7, candidate.getBio());
+            ps.executeUpdate();
+
+            JOptionPane.showMessageDialog(this, "Candidate uploaded successfully!");
+
+            // Reset form
+            tfFullName.setText("");
+            tfAcademicYear.setText("");
+            tfSchool.setText("");
+            taBio.setText("");
+            cbPosition.setSelectedIndex(0);
+            lblPicture.setText("No picture selected");
+            lblManifesto.setText("No manifesto selected");
+            selectedPicture = null;
+            selectedManifesto = null;
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+
+    // ----- Voting control methods (modified loadWindow) -----
+    private void loadWindow() {
+        // load active window row and update UI
+        try (Connection con = DBConnection.getConnection()) {
+            // Modified SQL to fetch results_released
+            String sql = "SELECT id, start_time, end_time, is_active, results_released FROM voting_window ORDER BY id LIMIT 1";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                Timestamp tsStart = rs.getTimestamp("start_time");
+                Timestamp tsEnd = rs.getTimestamp("end_time");
+                boolean active = rs.getInt("is_active") == 1;
+                boolean released = rs.getInt("results_released") == 1; // New fetch
+
+                tfStartTime.setText(tsStart.toLocalDateTime().format(DTF));
+                tfEndTime.setText(tsEnd.toLocalDateTime().format(DTF));
+                lblWindowStatus.setText("Status: " + (active ? "ACTIVE" : "INACTIVE"));
+                lblResultsStatus.setText("Results: " + (released ? "RELEASED" : "HIDDEN")); // New status update
+            } else {
+                lblWindowStatus.setText("Status: not set");
+                lblResultsStatus.setText("Results: not set"); // New status update
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            lblWindowStatus.setText("Status: error");
+            lblResultsStatus.setText("Results: error"); // New status update
+        }
+    }
+
+    private void activateWindow() {
+        String sStart = tfStartTime.getText().trim();
+        String sEnd = tfEndTime.getText().trim();
+        if (sStart.isEmpty() || sEnd.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Enter start and end times in the format yyyy-MM-dd HH:mm:ss");
+            return;
+        }
+
+        try {
+            LocalDateTime start = LocalDateTime.parse(sStart, DTF);
+            LocalDateTime end = LocalDateTime.parse(sEnd, DTF);
+            if (!end.isAfter(start)) {
+                JOptionPane.showMessageDialog(this, "End time must be after start time.");
+                return;
+            }
+
+            try (Connection con = DBConnection.getConnection()) {
+                // If table empty, insert; otherwise update first row
+                String checkSql = "SELECT id FROM voting_window ORDER BY id LIMIT 1";
+                PreparedStatement psCheck = con.prepareStatement(checkSql);
+                ResultSet rs = psCheck.executeQuery();
+                if (rs.next()) {
+                    int id = rs.getInt("id");
+                    String upd = "UPDATE voting_window SET start_time=?, end_time=?, is_active=1 WHERE id=?";
+                    PreparedStatement psUpd = con.prepareStatement(upd);
+                    psUpd.setTimestamp(1, Timestamp.valueOf(start));
+                    psUpd.setTimestamp(2, Timestamp.valueOf(end));
+                    psUpd.setInt(3, id);
+                    psUpd.executeUpdate();
+                } else {
+                    String ins = "INSERT INTO voting_window(start_time, end_time, is_active, results_released) VALUES(?,?,1,0)";
+                    PreparedStatement psIns = con.prepareStatement(ins);
+                    psIns.setTimestamp(1, Timestamp.valueOf(start));
+                    psIns.setTimestamp(2, Timestamp.valueOf(end));
+                    psIns.executeUpdate();
+                }
+                JOptionPane.showMessageDialog(this, "Voting window activated.");
+                loadWindow();
+            }
+
+        } catch (java.time.format.DateTimeParseException dtpe) {
+            JOptionPane.showMessageDialog(this, "Bad date format. Use yyyy-MM-dd HH:mm:ss");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error activating window: " + ex.getMessage());
+        }
+    }
+
+    private void deactivateWindow() {
+        try (Connection con = DBConnection.getConnection()) {
+            String checkSql = "SELECT id FROM voting_window ORDER BY id LIMIT 1";
+            PreparedStatement psCheck = con.prepareStatement(checkSql);
+            ResultSet rs = psCheck.executeQuery();
+            if (rs.next()) {
+                int id = rs.getInt("id");
+                String upd = "UPDATE voting_window SET is_active=0 WHERE id=?";
+                PreparedStatement psUpd = con.prepareStatement(upd);
+                psUpd.setInt(1, id);
+                psUpd.executeUpdate();
+                JOptionPane.showMessageDialog(this, "Voting window deactivated.");
+                loadWindow();
+            } else {
+                JOptionPane.showMessageDialog(this, "No voting window to deactivate.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error deactivating window: " + ex.getMessage());
+        }
+    }
+
+    // NEW: Results control methods
+    private void releaseResults() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to release the election results? Voters will see the winners.",
+                "Confirm Release", JOptionPane.YES_NO_OPTION);
+
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        // Use VotingUtil to update the status in DB
+        if (VotingUtil.updateResultsReleaseStatus(true)) {
+            JOptionPane.showMessageDialog(this, "Election results released successfully!");
+            loadWindow();
+        } else {
+            JOptionPane.showMessageDialog(this, "Error releasing results.");
+        }
+    }
+
+    private void hideResults() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to hide the election results? Voters will not see the winners.",
+                "Confirm Hide", JOptionPane.YES_NO_OPTION);
+
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        // Use VotingUtil to update the status in DB
+        if (VotingUtil.updateResultsReleaseStatus(false)) {
+            JOptionPane.showMessageDialog(this, "Election results hidden successfully!");
+            loadWindow();
+        } else {
+            JOptionPane.showMessageDialog(this, "Error hiding results.");
+        }
+    }
+}
