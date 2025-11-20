@@ -205,12 +205,24 @@ public class VoterDashboard extends JFrame {
         panel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
 
-        ImageIcon icon = new ImageIcon(c.getPhotoPath());
-        Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-        JLabel picLabel = new JLabel(new ImageIcon(img));
-        picLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        panel.add(picLabel, BorderLayout.WEST);
+        ImageIcon icon = null;
+        File photoFile = new File(c.getPhotoPath());
 
+        if (photoFile.exists()) {
+            icon = new ImageIcon(photoFile.getAbsolutePath());
+        }
+
+        if (icon != null && icon.getImage() != null) {
+            Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+            JLabel picLabel = new JLabel(new ImageIcon(img));
+            picLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            panel.add(picLabel, BorderLayout.WEST);
+        } else {
+            JLabel placeholder = new JLabel("Image Missing", SwingConstants.CENTER);
+            placeholder.setPreferredSize(new Dimension(170, 170));
+            placeholder.setBorder(BorderFactory.createLineBorder(Color.RED));
+            panel.add(placeholder, BorderLayout.WEST);
+        }
 
         JTextArea info = new JTextArea(
                 "Name: " + c.getFullName() +
@@ -251,9 +263,22 @@ public class VoterDashboard extends JFrame {
         panel.setLayout(new BorderLayout());
         panel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
 
-        ImageIcon icon = new ImageIcon(c.getPhotoPath());
-        Image img = icon.getImage().getScaledInstance(200, 200, Image.SCALE_SMOOTH);
-        panel.add(new JLabel(new ImageIcon(img)), BorderLayout.NORTH);
+        ImageIcon icon = null;
+        File photoFile = new File(c.getPhotoPath());
+
+        if (photoFile.exists()) {
+            icon = new ImageIcon(photoFile.getAbsolutePath());
+        }
+
+        if (icon != null && icon.getImage() != null) {
+            Image img = icon.getImage().getScaledInstance(200, 200, Image.SCALE_SMOOTH);
+            panel.add(new JLabel(new ImageIcon(img)), BorderLayout.NORTH);
+        } else {
+            JLabel placeholder = new JLabel("Image Missing", SwingConstants.CENTER);
+            placeholder.setPreferredSize(new Dimension(200, 200));
+            placeholder.setBorder(BorderFactory.createLineBorder(Color.RED));
+            panel.add(placeholder, BorderLayout.NORTH);
+        }
 
         JTextArea info = new JTextArea(
                 "Name: " + c.getFullName() +

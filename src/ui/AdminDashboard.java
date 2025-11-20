@@ -5,6 +5,7 @@ import models.Candidate;
 import util.VotingUtil;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
@@ -47,9 +48,11 @@ public class AdminDashboard extends JFrame {
         setSize(950, 700);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        // Removed custom background
 
         JLabel header = new JLabel("Upload Candidate, Voting & Results Control", SwingConstants.CENTER);
-        header.setFont(new Font("Arial", Font.BOLD, 20));
+        header.setFont(new Font("Arial", Font.BOLD, 24));
+        header.setForeground(Color.BLACK); // Set text to black
         header.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         add(header, BorderLayout.NORTH);
 
@@ -62,6 +65,7 @@ public class AdminDashboard extends JFrame {
 
         JPanel rightContainer = new JPanel();
         rightContainer.setLayout(new BoxLayout(rightContainer, BoxLayout.Y_AXIS));
+        // Removed custom background
 
         JPanel votingControl = createVotingControlPanel();
         rightContainer.add(votingControl);
@@ -83,7 +87,13 @@ public class AdminDashboard extends JFrame {
 
     private JPanel createCandidateUploadPanel() {
         JPanel left = new JPanel(new GridBagLayout());
-        left.setBorder(BorderFactory.createTitledBorder("Upload Candidate"));
+        // Removed custom background
+        left.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.BLACK), // Black border
+                "Upload Candidate", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 16), Color.BLACK // Black title text
+        ));
+
         GridBagConstraints gc = new GridBagConstraints();
         gc.insets = new Insets(6,6,6,6);
         gc.anchor = GridBagConstraints.WEST;
@@ -118,6 +128,7 @@ public class AdminDashboard extends JFrame {
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
         left.add(new JLabel("Picture:"), gc);
         JPanel pPic = new JPanel(new BorderLayout(6,0));
+        // Removed custom background
         lblPicture = new JLabel("No picture selected");
         btnUploadPicture = new JButton("Choose...");
         btnUploadPicture.addActionListener(e -> selectPicture());
@@ -129,6 +140,7 @@ public class AdminDashboard extends JFrame {
         gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
         left.add(new JLabel("Manifesto:"), gc);
         JPanel pMan = new JPanel(new BorderLayout(6,0));
+        // Removed custom background
         lblManifesto = new JLabel("No manifesto selected");
         btnUploadManifesto = new JButton("Choose...");
         btnUploadManifesto.addActionListener(e -> selectManifesto());
@@ -147,8 +159,10 @@ public class AdminDashboard extends JFrame {
         left.add(spBio, gc);
 
         btnSave = new JButton("Save Candidate");
+        // Removed custom background/foreground color
         btnSave.addActionListener(e -> saveCandidate());
         JPanel pSave = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        // Removed custom background
         pSave.add(btnSave);
         gc.gridx = 0; gc.gridy = row; gc.gridwidth = 2;
         left.add(pSave, gc);
@@ -158,7 +172,13 @@ public class AdminDashboard extends JFrame {
 
     private JPanel createVotingControlPanel() {
         JPanel right = new JPanel(new GridBagLayout());
-        right.setBorder(BorderFactory.createTitledBorder("Voting Window Control"));
+        // Removed custom background
+        right.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.BLACK), // Black border
+                "Voting Window Control", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 16), Color.BLACK // Black title text
+        ));
+
         GridBagConstraints rc = new GridBagConstraints();
         rc.insets = new Insets(8,8,8,8);
         rc.anchor = GridBagConstraints.WEST;
@@ -168,6 +188,7 @@ public class AdminDashboard extends JFrame {
         rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
         lblWindowStatus = new JLabel("Status: unknown");
         lblWindowStatus.setFont(new Font("Arial", Font.BOLD, 14));
+        // Removed custom foreground color
         right.add(lblWindowStatus, rc);
         r++;
 
@@ -185,10 +206,15 @@ public class AdminDashboard extends JFrame {
         right.add(tfEndTime, rc);
 
         btnActivate = new JButton("Activate Window");
+        // Removed custom background/foreground color
         btnActivate.addActionListener(e -> activateWindow());
+
         btnDeactivate = new JButton("Deactivate Window");
+        // Removed custom background/foreground color
         btnDeactivate.addActionListener(e -> deactivateWindow());
+
         btnLoadWindow = new JButton("Refresh Status");
+        // Removed custom background/foreground color
         btnLoadWindow.addActionListener(e -> loadWindow());
 
         JPanel pButtons = new JPanel(new GridLayout(1,3,8,8));
@@ -209,7 +235,13 @@ public class AdminDashboard extends JFrame {
 
     private JPanel createResultsControlPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Election Results Control"));
+        // Removed custom background
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.BLACK), // Black border
+                "Election Results Control", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 16), Color.BLACK // Black title text
+        ));
+
         GridBagConstraints rc = new GridBagConstraints();
         rc.insets = new Insets(8,8,8,8);
         rc.anchor = GridBagConstraints.WEST;
@@ -220,12 +252,16 @@ public class AdminDashboard extends JFrame {
         rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
         lblResultsStatus = new JLabel("Results: unknown");
         lblResultsStatus.setFont(new Font("Arial", Font.BOLD, 14));
+        // Removed custom foreground color
         panel.add(lblResultsStatus, rc);
         r++;
 
         btnReleaseResults = new JButton("Release Results");
+        // Removed custom background/foreground color
         btnReleaseResults.addActionListener(e -> releaseResults());
+
         btnHideResults = new JButton("Hide Results");
+        // Removed custom background/foreground color
         btnHideResults.addActionListener(e -> hideResults());
 
         JPanel pButtons = new JPanel(new GridLayout(1,2,8,8));
@@ -241,7 +277,13 @@ public class AdminDashboard extends JFrame {
 
     private JPanel createSystemControlPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("System Maintenance"));
+        // Removed custom background
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.BLACK), // Black border
+                "System Maintenance", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 16), Color.BLACK // Black title text
+        ));
+
         GridBagConstraints rc = new GridBagConstraints();
         rc.insets = new Insets(8,8,8,8);
         rc.anchor = GridBagConstraints.WEST;
@@ -250,8 +292,8 @@ public class AdminDashboard extends JFrame {
         int r = 0;
 
         btnPrepareNewElection = new JButton("PREPARE NEW ELECTION");
-        btnPrepareNewElection.setBackground(Color.RED);
-        btnPrepareNewElection.setForeground(Color.BLACK);
+        btnPrepareNewElection.setBackground(Color.RED); // Retained for warning
+        btnPrepareNewElection.setForeground(Color.WHITE); // Retained for warning
         btnPrepareNewElection.setFont(new Font("Arial", Font.BOLD, 14));
         btnPrepareNewElection.addActionListener(e -> prepareNewElection());
 
@@ -359,7 +401,6 @@ public class AdminDashboard extends JFrame {
                 lblResultsStatus.setText("Results: not set");
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
             lblWindowStatus.setText("Status: error");
             lblResultsStatus.setText("Results: error");
         }
@@ -471,6 +512,7 @@ public class AdminDashboard extends JFrame {
                 .forEach(File::delete);
     }
 
+    // FIX: Temporarily disable foreign key checks to allow TRUNCATE
     private void prepareNewElection() {
         int confirm = JOptionPane.showConfirmDialog(this,
                 "ARE YOU SURE? This will permanently delete ALL votes, ALL candidate data, and ALL manifesto folders.\n(Voter accounts will be kept intact.)",
@@ -482,12 +524,11 @@ public class AdminDashboard extends JFrame {
 
         try (Connection con = DBConnection.getConnection()) {
 
-            //Gets the list of directories to delete before truncating the table
+            // 1. Get list of directories to delete
             try (PreparedStatement ps = con.prepareStatement("SELECT photo_path FROM candidates")) {
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
                     String path = rs.getString("photo_path");
-
                     File photoFile = new File(path);
                     File candidateDir = photoFile.getParentFile();
 
@@ -497,17 +538,29 @@ public class AdminDashboard extends JFrame {
                 }
             }
 
-            // Deletes all votes and reset auto-increment
+            // --- Database Cleanup with Foreign Key Checks Disabled ---
+            // This is the fix for the SQLSyntaxErrorException
+            try (PreparedStatement psDisableKeys = con.prepareStatement("SET FOREIGN_KEY_CHECKS=0")) {
+                psDisableKeys.executeUpdate();
+            }
+
+            // 2. Delete all votes and reset auto-increment
             try (PreparedStatement psVotes = con.prepareStatement("TRUNCATE TABLE votes")) {
                 psVotes.executeUpdate();
             }
 
-            //Deletes all candidates and reset auto-increment
+            // 3. Delete all candidates and reset auto-increment
             try (PreparedStatement psCandidates = con.prepareStatement("TRUNCATE TABLE candidates")) {
                 psCandidates.executeUpdate();
             }
 
-            //Resets voting window status
+            // 4. Re-enable foreign key checks
+            try (PreparedStatement psEnableKeys = con.prepareStatement("SET FOREIGN_KEY_CHECKS=1")) {
+                psEnableKeys.executeUpdate();
+            }
+            // --- End Database Cleanup ---
+
+            // 5. Reset voting window status
             String resetSql = "UPDATE voting_window SET is_active=0, results_released=0";
             try (PreparedStatement psWindow = con.prepareStatement(resetSql)) {
                 psWindow.executeUpdate();
@@ -517,7 +570,6 @@ public class AdminDashboard extends JFrame {
             loadWindow();
 
         } catch (Exception ex) {
-            ex.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error preparing new election: " + ex.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
