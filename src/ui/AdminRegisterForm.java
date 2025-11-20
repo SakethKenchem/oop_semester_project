@@ -48,7 +48,7 @@ public class AdminRegisterForm extends JFrame {
         btnRegister.addActionListener(e -> doRegister());
         add(btnRegister);
 
-        btnLogin = new JButton("Login");
+        btnLogin = new JButton("Login Here");
         btnLogin.setBounds(220, 200, 100, 30);
         btnLogin.addActionListener(e -> {
             dispose();

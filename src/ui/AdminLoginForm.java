@@ -49,7 +49,7 @@ public class AdminLoginForm extends JFrame {
         btnLogin.addActionListener(e -> doLogin());
         add(btnLogin);
 
-        btnRegister = new JButton("Register");
+        btnRegister = new JButton("Register Here");
         btnRegister.setBounds(220, 200, 100, 30);
         btnRegister.addActionListener(e -> {
             dispose();

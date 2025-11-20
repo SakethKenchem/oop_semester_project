@@ -251,7 +251,7 @@ public class AdminDashboard extends JFrame {
 
         btnPrepareNewElection = new JButton("PREPARE NEW ELECTION");
         btnPrepareNewElection.setBackground(Color.RED);
-        btnPrepareNewElection.setForeground(Color.WHITE);
+        btnPrepareNewElection.setForeground(Color.BLACK);
         btnPrepareNewElection.setFont(new Font("Arial", Font.BOLD, 14));
         btnPrepareNewElection.addActionListener(e -> prepareNewElection());
 

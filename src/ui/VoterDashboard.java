@@ -22,9 +22,9 @@ public class VoterDashboard extends JFrame {
 
     // Centralized constant for all positions
     private static final String[] POSITIONS = {
-            "Chairperson","Vice Chairperson","Secretary General","Finance Rep",
-            "Public Relations","Male Academic Rep","Female Academic Rep",
-            "Male Sports Rep","Female Sports Rep"
+            "Chairperson", "Vice Chairperson", "Secretary General", "Finance Rep",
+            "Public Relations", "Male Academic Rep", "Female Academic Rep",
+            "Male Sports Rep", "Female Sports Rep"
     };
 
     public VoterDashboard(int voterId) {
@@ -129,9 +129,8 @@ public class VoterDashboard extends JFrame {
         }
     }
 
-    /**
-     * Loads the election results and displays the winners in each position
-     */
+    //Loads the election results and displays the winners in each position
+
     private void loadResults() {
 
         try (Connection con = DBConnection.getConnection()) {
@@ -209,7 +208,7 @@ public class VoterDashboard extends JFrame {
         ImageIcon icon = new ImageIcon(c.getPhotoPath());
         Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
         JLabel picLabel = new JLabel(new ImageIcon(img));
-        picLabel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+        picLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         panel.add(picLabel, BorderLayout.WEST);
 
 
@@ -231,7 +230,7 @@ public class VoterDashboard extends JFrame {
         JLabel voteLabel = new JLabel("<html><center><b>Total Votes:<br>" + votes + "</b></center></html>", SwingConstants.CENTER);
         voteLabel.setFont(new Font("Arial", Font.BOLD, 28));
         voteLabel.setForeground(Color.BLUE.darker());
-        voteLabel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+        voteLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JButton btnDownload = new JButton("Download Manifesto");
         btnDownload.addActionListener(e -> downloadManifesto(c));
@@ -268,7 +267,7 @@ public class VoterDashboard extends JFrame {
         info.setBackground(null);
         panel.add(info, BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new GridLayout(1,2,5,5));
+        JPanel buttons = new JPanel(new GridLayout(1, 2, 5, 5));
         JButton btnDownload = new JButton("Download Manifesto");
         btnDownload.addActionListener(e -> downloadManifesto(c));
         buttons.add(btnDownload);

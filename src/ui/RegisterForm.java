@@ -17,7 +17,7 @@ public class RegisterForm extends JFrame {
 
     public RegisterForm() {
         setTitle("Register - Student Voting System");
-        setSize(380, 350);
+        setSize(430, 350);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(null);
@@ -56,8 +56,8 @@ public class RegisterForm extends JFrame {
         btnRegister.addActionListener(this::doRegister);
         add(btnRegister);
 
-        btnLogin = new JButton("Login");
-        btnLogin.setBounds(200, 250, 100, 35);
+        btnLogin = new JButton("Have an account already? Login");
+        btnLogin.setBounds(200, 250, 200, 35);
         btnLogin.addActionListener(e -> {
             dispose();
             new LoginForm();
@@ -84,7 +84,7 @@ public class RegisterForm extends JFrame {
             PreparedStatement checkStmt = con.prepareStatement(checkSql);
             checkStmt.setString(1, sid);
             if (checkStmt.executeQuery().next()) {
-                JOptionPane.showMessageDialog(this, "Student ID already exists.");
+                JOptionPane.showMessageDialog(this, "This Student ID already exists.");
                 return;
             }
 

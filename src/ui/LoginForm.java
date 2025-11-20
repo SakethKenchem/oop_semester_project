@@ -16,7 +16,7 @@ public class LoginForm extends JFrame {
 
     public LoginForm() {
         setTitle("Login - Student Voting");
-        setSize(350, 350);
+        setSize(400, 350);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(null);
@@ -47,8 +47,8 @@ public class LoginForm extends JFrame {
         btnLogin.addActionListener(e -> doLogin());
         add(btnLogin);
 
-        btnRegister = new JButton("Register");
-        btnRegister.setBounds(180, 200, 100, 30);
+        btnRegister = new JButton("Don't have an Account? Register");
+        btnRegister.setBounds(180, 200, 180, 30);
         btnRegister.addActionListener(e -> {
             dispose();
             new RegisterForm(); // assumes you have a RegisterForm class
@@ -93,10 +93,10 @@ public class LoginForm extends JFrame {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                int voterId = rs.getInt("id"); // get voter ID
+                int voterId = rs.getInt("id");
                 JOptionPane.showMessageDialog(this, "Login Successful!");
                 dispose();
-                new VoterDashboard(voterId); // pass voterId to dashboard
+                new VoterDashboard(voterId);
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid Credentials");
             }
