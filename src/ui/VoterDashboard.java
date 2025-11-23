@@ -5,6 +5,7 @@ import models.Candidate;
 import util.VotingUtil;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.io.File;
@@ -17,10 +18,18 @@ import java.util.ArrayList;
 public class VoterDashboard extends JFrame {
 
     private int voterId;
-    private JLabel titleLabel;
-    private JPanel mainPanel;
 
-    // Centralized constant for all positions
+    // Panels for the tabs
+    private JPanel pCandidatesContainer;
+    private JPanel pResultsContainer;
+
+    // Theme Colors (Voter Blue Theme)
+    private static final Color VOTER_PRIMARY = new Color(0x4378BC);
+    private static final Color VOTER_ACCENT = new Color(0x02338D);
+    private static final Color BACKGROUND = new Color(250, 250, 250);
+    private static final Color WINNER_COLOR = new Color(0, 150, 0); // Green for winner
+
+    // Centralized positions
     private static final String[] POSITIONS = {
             "Chairperson", "Vice Chairperson", "Secretary General", "Finance Rep",
             "Public Relations", "Male Academic Rep", "Female Academic Rep",
@@ -31,59 +40,85 @@ public class VoterDashboard extends JFrame {
         this.voterId = voterId;
 
         setTitle("Voter Dashboard - ID: " + voterId);
-        setSize(950, 700);
+        setSize(950, 750);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        getContentPane().setBackground(BACKGROUND);
 
-        // Panel for NORTH region (Title)
-        this.titleLabel = new JLabel("Student Council Candidates", SwingConstants.CENTER);
-        this.titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        add(this.titleLabel, BorderLayout.NORTH);
+        // --- Header ---
+        JLabel titleLabel = new JLabel("Student Council Election", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
+        titleLabel.setForeground(VOTER_PRIMARY);
+        titleLabel.setBorder(new EmptyBorder(15, 10, 15, 10));
+        add(titleLabel, BorderLayout.NORTH);
 
-        // Panel for SOUTH region (Logout + Refresh)
+        // --- Tabs Setup ---
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(new Font("Arial", Font.BOLD, 16));
+        tabbedPane.setForeground(Color.BLACK);
+        tabbedPane.setBackground(BACKGROUND);
+
+        // 1. Initialize Container Panels
+        pCandidatesContainer = new JPanel();
+        pCandidatesContainer.setLayout(new BoxLayout(pCandidatesContainer, BoxLayout.Y_AXIS));
+        pCandidatesContainer.setBackground(BACKGROUND);
+
+        pResultsContainer = new JPanel();
+        pResultsContainer.setLayout(new BoxLayout(pResultsContainer, BoxLayout.Y_AXIS));
+        pResultsContainer.setBackground(BACKGROUND);
+
+        // 2. Add Scrolls
+        JScrollPane scrollCandidates = new JScrollPane(pCandidatesContainer);
+        scrollCandidates.setBorder(null);
+        scrollCandidates.getVerticalScrollBar().setUnitIncrement(16);
+
+        JScrollPane scrollResults = new JScrollPane(pResultsContainer);
+        scrollResults.setBorder(null);
+        scrollResults.getVerticalScrollBar().setUnitIncrement(16);
+
+        // 3. Add Tabs
+        tabbedPane.addTab("Vote for Candidates", scrollCandidates);
+        tabbedPane.addTab("Election Results", scrollResults);
+
+        add(tabbedPane, BorderLayout.CENTER);
+
+        // --- South Panel (Buttons) ---
         JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        southPanel.setBackground(BACKGROUND);
 
-        // --- Refresh Button ---
-        JButton btnRefresh = new JButton("Refresh");
-        btnRefresh.addActionListener(e -> loadContent());
+        JButton btnRefresh = new JButton("Refresh Data");
+        btnRefresh.setBackground(VOTER_PRIMARY);
+        btnRefresh.setForeground(Color.BLACK);
+        btnRefresh.setFont(new Font("Arial", Font.BOLD, 14));
+        btnRefresh.addActionListener(e -> refreshAllData());
         southPanel.add(btnRefresh);
 
-        // --- Logout Button ---
         JButton btnLogout = new JButton("Logout");
+        btnLogout.setBackground(Color.GRAY);
+        btnLogout.setForeground(Color.BLACK);
+        btnLogout.setFont(new Font("Arial", Font.BOLD, 14));
         btnLogout.addActionListener(e -> dispose());
         southPanel.add(btnLogout);
 
         add(southPanel, BorderLayout.SOUTH);
 
-        // Panel for CENTER region (Scrollable Content)
-        this.mainPanel = new JPanel();
-        this.mainPanel.setLayout(new BoxLayout(this.mainPanel, BoxLayout.Y_AXIS));
-        JScrollPane scrollPane = new JScrollPane(this.mainPanel);
-        add(scrollPane, BorderLayout.CENTER);
-
-        loadContent(); // Initial content load
+        // Initial Data Load
+        refreshAllData();
 
         setVisible(true);
     }
 
-    // method for content loading and UI refresh
-    private void loadContent() {
-        this.mainPanel.removeAll();
-
-        if (VotingUtil.isResultsReleased()) {
-            this.titleLabel.setText("Official Election Results");
-            loadResults();
-        } else {
-            this.titleLabel.setText("Student Council Candidates");
-            loadCandidates();
-        }
-
-        this.mainPanel.revalidate();
-        this.mainPanel.repaint();
+    // --- Data Refresh Logic ---
+    private void refreshAllData() {
+        loadCandidates();
+        loadResults();
     }
 
+    // --- Tab 1: Load Candidates ---
     private void loadCandidates() {
+        pCandidatesContainer.removeAll();
+
         try (Connection con = DBConnection.getConnection()) {
             ResultSet rs = con.createStatement().executeQuery("SELECT * FROM candidates ORDER BY position");
             ArrayList<Candidate> candidates = new ArrayList<>();
@@ -103,13 +138,22 @@ public class VoterDashboard extends JFrame {
 
             boolean votingOpen = VotingUtil.isVotingOpen();
 
+            // Add a status banner
+            JLabel statusLabel = new JLabel(votingOpen ? "Voting is currently OPEN" : "Voting is currently CLOSED");
+            statusLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            statusLabel.setForeground(votingOpen ? new Color(0, 150, 0) : Color.RED);
+            statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            statusLabel.setBorder(new EmptyBorder(10,0,10,0));
+            pCandidatesContainer.add(statusLabel);
+
             for (String pos : POSITIONS) {
                 JPanel posPanel = new JPanel();
                 posPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
+                posPanel.setBackground(BACKGROUND);
                 posPanel.setBorder(BorderFactory.createTitledBorder(
-                        BorderFactory.createLineBorder(Color.BLACK),
+                        BorderFactory.createLineBorder(VOTER_PRIMARY, 1),
                         pos, TitledBorder.LEFT, TitledBorder.TOP,
-                        new Font("Arial", Font.BOLD, 16)
+                        new Font("Arial", Font.BOLD, 18), VOTER_PRIMARY
                 ));
 
                 boolean hasCandidate = false;
@@ -120,190 +164,236 @@ public class VoterDashboard extends JFrame {
                     }
                 }
 
-                if (hasCandidate) this.mainPanel.add(posPanel);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error loading candidates: " + e.getMessage());
-        }
-    }
-
-    //Loads the election results and displays the winners in each position
-
-    private void loadResults() {
-
-        try (Connection con = DBConnection.getConnection()) {
-
-            // Finds the winner's candidate_id and total_votes for a specific position
-            String winnerSql = "SELECT candidate_id, COUNT(id) AS total_votes " +
-                    "FROM votes WHERE position = ? " +
-                    "GROUP BY candidate_id ORDER BY total_votes DESC LIMIT 1";
-
-            //Gets the full candidate details based on the winner's ID
-            String candidateSql = "SELECT * FROM candidates WHERE id = ?";
-
-            PreparedStatement psWinner = con.prepareStatement(winnerSql);
-            PreparedStatement psCandidate = con.prepareStatement(candidateSql);
-
-            for (String pos : POSITIONS) { // Use static constant
-                psWinner.setString(1, pos);
-
-                try (ResultSet rsWinner = psWinner.executeQuery()) {
-                    if (rsWinner.next()) {
-                        int winnerId = rsWinner.getInt("candidate_id");
-                        int maxVotes = rsWinner.getInt("total_votes");
-
-                        // Fetches Candidate details
-                        psCandidate.setInt(1, winnerId);
-                        try (ResultSet rsCandidate = psCandidate.executeQuery()) {
-                            if (rsCandidate.next()) {
-                                Candidate winner = new Candidate(
-                                        rsCandidate.getInt("id"),
-                                        rsCandidate.getString("full_name"),
-                                        rsCandidate.getString("academic_year"),
-                                        rsCandidate.getString("school"),
-                                        rsCandidate.getString("position"),
-                                        rsCandidate.getString("photo_path"),
-                                        rsCandidate.getString("manifesto_path"),
-                                        rsCandidate.getString("bio")
-                                );
-                                this.mainPanel.add(createWinnerPanel(pos, winner, maxVotes));
-                            }
-                        }
-                    } else {
-                        //
-                        JPanel posPanel = new JPanel();
-                        posPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-                        posPanel.setBorder(BorderFactory.createTitledBorder(
-                                BorderFactory.createLineBorder(Color.BLACK),
-                                pos, TitledBorder.LEFT, TitledBorder.TOP,
-                                new Font("Arial", Font.BOLD, 16)
-                        ));
-                        posPanel.add(new JLabel("No votes recorded for this position."));
-                        this.mainPanel.add(posPanel);
-                    }
+                if (hasCandidate) {
+                    pCandidatesContainer.add(posPanel);
+                    pCandidatesContainer.add(Box.createVerticalStrut(10));
                 }
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this.mainPanel, "Error loading results: " + e.getMessage());
         }
+
+        pCandidatesContainer.revalidate();
+        pCandidatesContainer.repaint();
     }
-
-    // A panel for the winner of a position
-    private JPanel createWinnerPanel(String position, Candidate c, int votes) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.GREEN.darker(), 2), // Highlight winner
-                position + " - WINNER", TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 18), Color.GREEN.darker()
-        ));
-        panel.setMaximumSize(new Dimension(850, 300));
-        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-
-        ImageIcon icon = null;
-        File photoFile = new File(c.getPhotoPath());
-
-        if (photoFile.exists()) {
-            icon = new ImageIcon(photoFile.getAbsolutePath());
-        }
-
-        if (icon != null && icon.getImage() != null) {
-            Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-            JLabel picLabel = new JLabel(new ImageIcon(img));
-            picLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-            panel.add(picLabel, BorderLayout.WEST);
-        } else {
-            JLabel placeholder = new JLabel("Image Missing", SwingConstants.CENTER);
-            placeholder.setPreferredSize(new Dimension(170, 170));
-            placeholder.setBorder(BorderFactory.createLineBorder(Color.RED));
-            panel.add(placeholder, BorderLayout.WEST);
-        }
-
-        JTextArea info = new JTextArea(
-                "Name: " + c.getFullName() +
-                        "\nSchool: " + c.getSchool() +
-                        "\nYear: " + c.getAcademicYear() +
-                        "\nBio: " + c.getBio()
-        );
-        info.setEditable(false);
-        info.setLineWrap(true);
-        info.setWrapStyleWord(true);
-        info.setBackground(null);
-        panel.add(info, BorderLayout.CENTER);
-
-        // Right: Vote Count and Manifesto Button
-        JPanel eastPanel = new JPanel(new BorderLayout());
-
-        JLabel voteLabel = new JLabel("<html><center><b>Total Votes:<br>" + votes + "</b></center></html>", SwingConstants.CENTER);
-        voteLabel.setFont(new Font("Arial", Font.BOLD, 28));
-        voteLabel.setForeground(Color.BLUE.darker());
-        voteLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-        JButton btnDownload = new JButton("Download Manifesto");
-        btnDownload.addActionListener(e -> downloadManifesto(c));
-
-        eastPanel.add(voteLabel, BorderLayout.NORTH);
-        eastPanel.add(btnDownload, BorderLayout.SOUTH);
-        eastPanel.setPreferredSize(new Dimension(200, 150));
-
-        panel.add(eastPanel, BorderLayout.EAST);
-
-        return panel;
-    }
-
 
     private JPanel createCandidatePanel(Candidate c, boolean votingOpen) {
         JPanel panel = new JPanel();
-        panel.setPreferredSize(new Dimension(250, 380));
+        panel.setPreferredSize(new Dimension(260, 400));
         panel.setLayout(new BorderLayout());
-        panel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        panel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        panel.setBackground(Color.WHITE);
 
+        // Robust Image Loading
         ImageIcon icon = null;
         File photoFile = new File(c.getPhotoPath());
-
         if (photoFile.exists()) {
             icon = new ImageIcon(photoFile.getAbsolutePath());
         }
 
         if (icon != null && icon.getImage() != null) {
             Image img = icon.getImage().getScaledInstance(200, 200, Image.SCALE_SMOOTH);
-            panel.add(new JLabel(new ImageIcon(img)), BorderLayout.NORTH);
+            JLabel picLabel = new JLabel(new ImageIcon(img), SwingConstants.CENTER);
+            picLabel.setBorder(new EmptyBorder(10,0,0,0));
+            panel.add(picLabel, BorderLayout.NORTH);
         } else {
-            JLabel placeholder = new JLabel("Image Missing", SwingConstants.CENTER);
+            JLabel placeholder = new JLabel("Photo Unavailable", SwingConstants.CENTER);
             placeholder.setPreferredSize(new Dimension(200, 200));
-            placeholder.setBorder(BorderFactory.createLineBorder(Color.RED));
+            placeholder.setForeground(Color.GRAY);
+            placeholder.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
             panel.add(placeholder, BorderLayout.NORTH);
         }
 
         JTextArea info = new JTextArea(
                 "Name: " + c.getFullName() +
-                        "\nSchool: " + c.getSchool() +
                         "\nYear: " + c.getAcademicYear() +
-                        "\nBio: " + c.getBio()
+                        "\nSchool: " + c.getSchool() +
+                        "\n\n\"" + (c.getBio().length() > 60 ? c.getBio().substring(0, 60) + "..." : c.getBio()) + "\""
         );
         info.setEditable(false);
         info.setLineWrap(true);
         info.setWrapStyleWord(true);
-        info.setBackground(null);
+        info.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        info.setBackground(Color.WHITE);
+        info.setBorder(new EmptyBorder(5, 10, 5, 10));
         panel.add(info, BorderLayout.CENTER);
 
         JPanel buttons = new JPanel(new GridLayout(1, 2, 5, 5));
-        JButton btnDownload = new JButton("Download Manifesto");
+        buttons.setBackground(Color.WHITE);
+        buttons.setBorder(new EmptyBorder(5, 5, 5, 5));
+
+        JButton btnDownload = new JButton("Manifesto");
+        btnDownload.setBackground(VOTER_ACCENT);
+        btnDownload.setForeground(Color.BLACK);
         btnDownload.addActionListener(e -> downloadManifesto(c));
         buttons.add(btnDownload);
 
         JButton btnVote = new JButton("Vote");
         btnVote.addActionListener(e -> castVote(c));
         btnVote.setEnabled(votingOpen);
-        if (!votingOpen) btnVote.setToolTipText("Voting is currently closed.");
+        btnVote.setBackground(votingOpen ? VOTER_PRIMARY : Color.GRAY);
+        btnVote.setForeground(Color.WHITE);
         buttons.add(btnVote);
 
         panel.add(buttons, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    // --- Tab 2: Load Results ---
+    private void loadResults() {
+        pResultsContainer.removeAll();
+
+        if (!VotingUtil.isResultsReleased()) {
+            // Case: Results NOT released
+            JPanel msgPanel = new JPanel(new GridBagLayout());
+            msgPanel.setBackground(BACKGROUND);
+
+            JLabel lblMsg = new JLabel("Election results have not been released yet.");
+            lblMsg.setFont(new Font("Arial", Font.BOLD, 20));
+            lblMsg.setForeground(Color.GRAY);
+
+            msgPanel.add(lblMsg);
+            msgPanel.setPreferredSize(new Dimension(800, 100));
+            pResultsContainer.add(msgPanel);
+
+        } else {
+            // Case: Results ARE released
+            JLabel header = new JLabel("ELECTION RESULTS", SwingConstants.CENTER);
+            header.setFont(new Font("Arial", Font.BOLD, 24));
+            header.setForeground(VOTER_PRIMARY);
+            header.setAlignmentX(Component.CENTER_ALIGNMENT);
+            header.setBorder(new EmptyBorder(20,0,20,0));
+            pResultsContainer.add(header);
+
+            try (Connection con = DBConnection.getConnection()) {
+
+                // Loop through each position
+                for (String pos : POSITIONS) {
+
+                    //Find the winner ID
+                    int winnerId = -1;
+                    String winnerSql = "SELECT candidate_id, COUNT(*) as total FROM votes WHERE position=? GROUP BY candidate_id ORDER BY total DESC LIMIT 1";
+                    try (PreparedStatement psW = con.prepareStatement(winnerSql)) {
+                        psW.setString(1, pos);
+                        ResultSet rsW = psW.executeQuery();
+                        if (rsW.next()) {
+                            winnerId = rsW.getInt("candidate_id");
+                        }
+                    }
+
+                    //Get ALL candidates
+                    String candidatesSql = "SELECT * FROM candidates WHERE position=?";
+                    try (PreparedStatement psC = con.prepareStatement(candidatesSql)) {
+                        psC.setString(1, pos);
+                        ResultSet rsC = psC.executeQuery();
+                        ArrayList<Candidate> posCandidates = new ArrayList<>();
+                        while(rsC.next()) {
+                            posCandidates.add(new Candidate(
+                                    rsC.getInt("id"), rsC.getString("full_name"), rsC.getString("academic_year"),
+                                    rsC.getString("school"), rsC.getString("position"), rsC.getString("photo_path"),
+                                    rsC.getString("manifesto_path"), rsC.getString("bio")
+                            ));
+                        }
+
+                        if (!posCandidates.isEmpty()) {
+                            // Create Panel for this Position
+                            JPanel posPanel = new JPanel();
+                            posPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 15, 15));
+                            posPanel.setBackground(BACKGROUND);
+                            posPanel.setBorder(BorderFactory.createTitledBorder(
+                                    BorderFactory.createLineBorder(Color.BLACK),
+                                    pos, TitledBorder.LEFT, TitledBorder.TOP,
+                                    new Font("Arial", Font.BOLD, 18), Color.BLACK
+                            ));
+
+                            //Loop candidates and get their specific vote count
+                            for (Candidate c : posCandidates) {
+                                int votes = 0;
+                                String voteSql = "SELECT COUNT(*) FROM votes WHERE candidate_id=?";
+                                try(PreparedStatement psV = con.prepareStatement(voteSql)) {
+                                    psV.setInt(1, c.getId());
+                                    ResultSet rsV = psV.executeQuery();
+                                    if(rsV.next()) votes = rsV.getInt(1);
+                                }
+
+                                boolean isWinner = (c.getId() == winnerId && votes > 0);
+                                posPanel.add(createResultCard(c, votes, isWinner));
+                            }
+
+                            pResultsContainer.add(posPanel);
+                            pResultsContainer.add(Box.createVerticalStrut(15));
+                        }
+                    }
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        pResultsContainer.revalidate();
+        pResultsContainer.repaint();
+    }
+
+    private JPanel createResultCard(Candidate c, int votes, boolean isWinner) {
+        JPanel panel = new JPanel();
+        panel.setPreferredSize(new Dimension(220, 320));
+        panel.setLayout(new BorderLayout());
+        panel.setBackground(Color.WHITE);
+
+        if (isWinner) {
+            panel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(WINNER_COLOR, 4),
+                    new EmptyBorder(5,5,5,5)
+            ));
+        } else {
+            panel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
+        }
+
+        // Image
+        ImageIcon icon = null;
+        File photoFile = new File(c.getPhotoPath());
+        if (photoFile.exists()) icon = new ImageIcon(photoFile.getAbsolutePath());
+
+        if (icon != null && icon.getImage() != null) {
+            Image img = icon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+            JLabel picLabel = new JLabel(new ImageIcon(img), SwingConstants.CENTER);
+            picLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
+            panel.add(picLabel, BorderLayout.NORTH);
+        } else {
+            JLabel placeholder = new JLabel("No Photo", SwingConstants.CENTER);
+            placeholder.setPreferredSize(new Dimension(150, 150));
+            placeholder.setForeground(Color.GRAY);
+            panel.add(placeholder, BorderLayout.NORTH);
+        }
+
+        // Info
+        JPanel infoPanel = new JPanel(new GridLayout(4, 1));
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(new EmptyBorder(5, 10, 5, 10));
+
+        JLabel nameLbl = new JLabel(c.getFullName(), SwingConstants.CENTER);
+        nameLbl.setFont(new Font("Arial", Font.BOLD, 14));
+        infoPanel.add(nameLbl);
+
+        if (isWinner) {
+            JLabel winnerBadge = new JLabel("WINNER", SwingConstants.CENTER);
+            winnerBadge.setFont(new Font("Arial", Font.BOLD, 14));
+            winnerBadge.setForeground(WINNER_COLOR);
+            infoPanel.add(winnerBadge);
+        } else {
+            infoPanel.add(new JLabel("")); // Spacer
+        }
+
+        // Vote Count
+        JLabel votesLbl = new JLabel(votes + " Votes", SwingConstants.CENTER);
+        votesLbl.setFont(new Font("Arial", Font.BOLD, 18));
+        votesLbl.setForeground(isWinner ? WINNER_COLOR : Color.DARK_GRAY);
+        infoPanel.add(votesLbl);
+
+        panel.add(infoPanel, BorderLayout.CENTER);
 
         return panel;
     }
@@ -312,19 +402,15 @@ public class VoterDashboard extends JFrame {
         try {
             File source = new File(c.getManifestoPath());
             if (!source.exists()) {
-                JOptionPane.showMessageDialog(this, "Manifesto not found!");
+                JOptionPane.showMessageDialog(this, "Manifesto file missing on server.");
                 return;
             }
-
-            String filename = c.getFullName().replaceAll(" ", "_") + "_" +
-                    c.getPosition().replaceAll(" ", "_") + "_manifesto.pdf";
-
+            String filename = c.getFullName().replaceAll(" ", "_") + "_Manifesto.pdf";
             JFileChooser fc = new JFileChooser();
             fc.setSelectedFile(new File(filename));
             if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-                File dest = fc.getSelectedFile();
-                Files.copy(source.toPath(), dest.toPath());
-                JOptionPane.showMessageDialog(this, "Manifesto saved as " + dest.getName());
+                Files.copy(source.toPath(), fc.getSelectedFile().toPath());
+                JOptionPane.showMessageDialog(this, "Download Successful!");
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -332,14 +418,12 @@ public class VoterDashboard extends JFrame {
     }
 
     private void castVote(Candidate c) {
-        // checks the voting window on server
         if (!VotingUtil.isVotingOpen()) {
             JOptionPane.showMessageDialog(this, "Voting is currently closed.");
             return;
         }
-
         int confirm = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to vote for " + c.getFullName() + " as " + c.getPosition() + "?\nYou cannot retract your vote.",
+                "Confirm vote for " + c.getFullName() + " as " + c.getPosition() + "?",
                 "Confirm Vote", JOptionPane.YES_NO_OPTION);
 
         if (confirm != JOptionPane.YES_OPTION) return;
@@ -351,13 +435,12 @@ public class VoterDashboard extends JFrame {
             ps.setInt(2, c.getId());
             ps.setString(3, c.getPosition());
             ps.executeUpdate();
-
-            JOptionPane.showMessageDialog(this, "Vote cast successfully for " + c.getFullName() + "!");
+            JOptionPane.showMessageDialog(this, "Vote Cast Successfully!");
         } catch (java.sql.SQLIntegrityConstraintViolationException ex) {
-            JOptionPane.showMessageDialog(this, "You have already voted for " + c.getPosition() + "!");
+            JOptionPane.showMessageDialog(this, "You have already voted for this position!");
         } catch (Exception ex) {
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error casting vote: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
         }
     }
 }

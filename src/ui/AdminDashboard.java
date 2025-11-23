@@ -5,7 +5,8 @@ import models.Candidate;
 import util.VotingUtil;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
@@ -20,6 +21,13 @@ import java.util.Comparator;
 
 public class AdminDashboard extends JFrame {
 
+    // THEME COLORS (Admin)
+    private static final Color ADMIN_PRIMARY = new Color(0xE02729); // Red
+    private static final Color ADMIN_SECONDARY = new Color(0x4378BC); // Blue
+    private static final Color ADMIN_ACCENT = new Color(0xF4B218); // Amber
+    private static final Color BACKGROUND = new Color(250, 250, 250);
+
+    // Candidate Upload Fields
     private JTextField tfFullName, tfAcademicYear, tfSchool;
     private JTextArea taBio;
     private JComboBox<String> cbPosition;
@@ -27,20 +35,24 @@ public class AdminDashboard extends JFrame {
     private File selectedPicture, selectedManifesto;
     private JButton btnUploadPicture, btnUploadManifesto, btnSave;
 
+    // Voting Control Fields
     private JTextField tfStartTime, tfEndTime;
     private JButton btnActivate, btnDeactivate, btnLoadWindow;
     private JLabel lblWindowStatus;
 
+    // Results Control Fields
     private JButton btnReleaseResults, btnHideResults;
     private JLabel lblResultsStatus;
 
+    // System Maintenance Fields
     private JButton btnPrepareNewElection;
 
+    // Centralized Constants
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final String[] POSITIONS = {
-            "Chairperson","Vice Chairperson","Secretary General","Finance Rep",
-            "Public Relations","Male Academic Rep","Female Academic Rep",
-            "Male Sports Rep","Female Sports Rep"
+            "Chairperson", "Vice Chairperson", "Secretary General", "Finance Rep",
+            "Public Relations", "Male Academic Rep", "Female Academic Rep",
+            "Male Sports Rep", "Female Sports Rep"
     };
 
     public AdminDashboard(String adminUsername) {
@@ -48,266 +60,351 @@ public class AdminDashboard extends JFrame {
         setSize(950, 700);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        // Removed custom background
+        getContentPane().setBackground(BACKGROUND);
+        setLayout(new BorderLayout());
 
-        JLabel header = new JLabel("Upload Candidate, Voting & Results Control", SwingConstants.CENTER);
-        header.setFont(new Font("Arial", Font.BOLD, 24));
-        header.setForeground(Color.BLACK); // Set text to black
-        header.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
-        add(header, BorderLayout.NORTH);
+        // --- Header Panel with Logo ---
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(BACKGROUND);
+        headerPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        split.setResizeWeight(0.65);
-        add(split, BorderLayout.CENTER);
+        // Title
+        JLabel titleLabel = new JLabel("Strathmore Voting System Console", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
+        titleLabel.setForeground(ADMIN_PRIMARY);
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
 
-        JPanel left = createCandidateUploadPanel();
-        split.setLeftComponent(left);
+        // Logo (Top Right)
+        ImageIcon logoIcon = new ImageIcon("src/logo.png");
+        if (logoIcon.getImage() != null) {
 
-        JPanel rightContainer = new JPanel();
-        rightContainer.setLayout(new BoxLayout(rightContainer, BoxLayout.Y_AXIS));
-        // Removed custom background
+            Image scaled = logoIcon.getImage().getScaledInstance(250, 100, Image.SCALE_SMOOTH);
+            JLabel logoLbl = new JLabel(new ImageIcon(scaled));
+            logoLbl.setBorder(new EmptyBorder(0, 10, 0, 0));
+            headerPanel.add(logoLbl, BorderLayout.EAST);
+        }
 
-        JPanel votingControl = createVotingControlPanel();
-        rightContainer.add(votingControl);
+        add(headerPanel, BorderLayout.NORTH);
+        // -----------------------------
 
-        JPanel resultsControl = createResultsControlPanel();
-        rightContainer.add(Box.createVerticalStrut(15));
-        rightContainer.add(resultsControl);
+        // --- JTabbedPane Setup ---
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(new Font("Arial", Font.BOLD, 14));
+        tabbedPane.setForeground(Color.BLACK);
+        tabbedPane.setBackground(BACKGROUND);
 
-        JPanel systemControl = createSystemControlPanel();
-        rightContainer.add(Box.createVerticalStrut(15));
-        rightContainer.add(systemControl);
+        // Add Panels to Tabs
+        tabbedPane.addTab("Upload Candidate", createCandidateUploadPanel());
+        tabbedPane.addTab("Voting Window Control", createVotingControlPanel());
+        tabbedPane.addTab("Election Results Control", createResultsControlPanel());
+        tabbedPane.addTab("System Maintenance", createSystemControlPanel());
 
-        split.setRightComponent(rightContainer);
+        add(tabbedPane, BorderLayout.CENTER);
 
         loadWindow();
 
         setVisible(true);
     }
 
+    //Tab 1: Upload Candidate Panel
+
     private JPanel createCandidateUploadPanel() {
-        JPanel left = new JPanel(new GridBagLayout());
-        // Removed custom background
-        left.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.BLACK), // Black border
-                "Upload Candidate", TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 16), Color.BLACK // Black title text
-        ));
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(BACKGROUND);
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         GridBagConstraints gc = new GridBagConstraints();
-        gc.insets = new Insets(6,6,6,6);
+        gc.insets = new Insets(8, 8, 8, 8);
         gc.anchor = GridBagConstraints.WEST;
         gc.fill = GridBagConstraints.HORIZONTAL;
 
         int row = 0;
 
-        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
-        left.add(new JLabel("Full Name:"), gc);
+        // Full Name
+        gc.gridx = 0;
+        gc.gridy = row;
+        gc.weightx = 0;
+        panel.add(new JLabel("Full Name:", SwingConstants.RIGHT), gc);
         tfFullName = new JTextField();
-        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
-        left.add(tfFullName, gc);
+        gc.gridx = 1;
+        gc.gridy = row++;
+        gc.weightx = 1.0;
+        panel.add(tfFullName, gc);
 
-        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
-        left.add(new JLabel("Academic Year:"), gc);
+        // Academic Year
+        gc.gridx = 0;
+        gc.gridy = row;
+        gc.weightx = 0;
+        panel.add(new JLabel("Academic Year:", SwingConstants.RIGHT), gc);
         tfAcademicYear = new JTextField();
-        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
-        left.add(tfAcademicYear, gc);
+        gc.gridx = 1;
+        gc.gridy = row++;
+        gc.weightx = 1.0;
+        panel.add(tfAcademicYear, gc);
 
-        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
-        left.add(new JLabel("School:"), gc);
+        // School
+        gc.gridx = 0;
+        gc.gridy = row;
+        gc.weightx = 0;
+        panel.add(new JLabel("School:", SwingConstants.RIGHT), gc);
         tfSchool = new JTextField();
-        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
-        left.add(tfSchool, gc);
+        gc.gridx = 1;
+        gc.gridy = row++;
+        gc.weightx = 1.0;
+        panel.add(tfSchool, gc);
 
-        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
-        left.add(new JLabel("Position:"), gc);
+        // Position
+        gc.gridx = 0;
+        gc.gridy = row;
+        gc.weightx = 0;
+        panel.add(new JLabel("Position:", SwingConstants.RIGHT), gc);
         cbPosition = new JComboBox<>(POSITIONS);
-        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
-        left.add(cbPosition, gc);
+        gc.gridx = 1;
+        gc.gridy = row++;
+        gc.weightx = 1.0;
+        panel.add(cbPosition, gc);
 
-        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
-        left.add(new JLabel("Picture:"), gc);
-        JPanel pPic = new JPanel(new BorderLayout(6,0));
-        // Removed custom background
+        // Picture label + button
+        gc.gridx = 0;
+        gc.gridy = row;
+        gc.weightx = 0;
+        panel.add(new JLabel("Picture:", SwingConstants.RIGHT), gc);
+        JPanel pPic = new JPanel(new BorderLayout(6, 0));
+        pPic.setBackground(BACKGROUND);
         lblPicture = new JLabel("No picture selected");
+
         btnUploadPicture = new JButton("Choose...");
         btnUploadPicture.addActionListener(e -> selectPicture());
+
         pPic.add(lblPicture, BorderLayout.CENTER);
         pPic.add(btnUploadPicture, BorderLayout.EAST);
-        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
-        left.add(pPic, gc);
+        gc.gridx = 1;
+        gc.gridy = row++;
+        gc.weightx = 1.0;
+        panel.add(pPic, gc);
 
-        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
-        left.add(new JLabel("Manifesto:"), gc);
-        JPanel pMan = new JPanel(new BorderLayout(6,0));
-        // Removed custom background
+        // Manifesto label + button
+        gc.gridx = 0;
+        gc.gridy = row;
+        gc.weightx = 0;
+        panel.add(new JLabel("Manifesto:", SwingConstants.RIGHT), gc);
+        JPanel pMan = new JPanel(new BorderLayout(6, 0));
+        pMan.setBackground(BACKGROUND);
         lblManifesto = new JLabel("No manifesto selected");
+
         btnUploadManifesto = new JButton("Choose...");
         btnUploadManifesto.addActionListener(e -> selectManifesto());
+
         pMan.add(lblManifesto, BorderLayout.CENTER);
         pMan.add(btnUploadManifesto, BorderLayout.EAST);
-        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
-        left.add(pMan, gc);
+        gc.gridx = 1;
+        gc.gridy = row++;
+        gc.weightx = 1.0;
+        panel.add(pMan, gc);
 
-        gc.gridx = 0; gc.gridy = row; gc.weightx = 0;
-        left.add(new JLabel("Bio:"), gc);
+        // Bio
+        gc.gridx = 0;
+        gc.gridy = row;
+        gc.weightx = 0;
+        panel.add(new JLabel("Bio:", SwingConstants.RIGHT), gc);
         taBio = new JTextArea(6, 20);
         taBio.setLineWrap(true);
         taBio.setWrapStyleWord(true);
         JScrollPane spBio = new JScrollPane(taBio);
-        gc.gridx = 1; gc.gridy = row++; gc.weightx = 1.0;
-        left.add(spBio, gc);
+        gc.gridx = 1;
+        gc.gridy = row++;
+        gc.weightx = 1.0;
+        panel.add(spBio, gc);
 
+        // Save button
         btnSave = new JButton("Save Candidate");
-        // Removed custom background/foreground color
+        btnSave.setFont(new Font("Arial", Font.BOLD, 14));
+        btnSave.setBackground(ADMIN_PRIMARY);
+        btnSave.setForeground(Color.BLACK); // Black Text
         btnSave.addActionListener(e -> saveCandidate());
-        JPanel pSave = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        // Removed custom background
-        pSave.add(btnSave);
-        gc.gridx = 0; gc.gridy = row; gc.gridwidth = 2;
-        left.add(pSave, gc);
 
-        return left;
+        JPanel pSave = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        pSave.setBackground(BACKGROUND);
+        pSave.add(btnSave);
+        gc.gridx = 0;
+        gc.gridy = row;
+        gc.gridwidth = 2;
+        panel.add(pSave, gc);
+
+        return panel;
     }
 
+    //Tab 2: Voting Window Control Panel
     private JPanel createVotingControlPanel() {
-        JPanel right = new JPanel(new GridBagLayout());
-        // Removed custom background
-        right.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.BLACK), // Black border
-                "Voting Window Control", TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 16), Color.BLACK // Black title text
-        ));
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(BACKGROUND);
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         GridBagConstraints rc = new GridBagConstraints();
-        rc.insets = new Insets(8,8,8,8);
+        rc.insets = new Insets(10, 10, 10, 10);
         rc.anchor = GridBagConstraints.WEST;
         rc.fill = GridBagConstraints.HORIZONTAL;
 
         int r = 0;
-        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
+        // Current status
+        rc.gridx = 0;
+        rc.gridy = r;
+        rc.gridwidth = 2;
         lblWindowStatus = new JLabel("Status: unknown");
-        lblWindowStatus.setFont(new Font("Arial", Font.BOLD, 14));
-        // Removed custom foreground color
-        right.add(lblWindowStatus, rc);
+        lblWindowStatus.setFont(new Font("Arial", Font.BOLD, 18));
+        lblWindowStatus.setForeground(ADMIN_PRIMARY);
+        panel.add(lblWindowStatus, rc);
         r++;
 
+        // Start time
         rc.gridwidth = 1;
-        rc.gridx = 0; rc.gridy = r;
-        right.add(new JLabel("Start (yyyy-MM-dd HH:mm:ss):"), rc);
+        rc.gridx = 0;
+        rc.gridy = r;
+        panel.add(new JLabel("Start (yyyy-MM-dd HH:mm:ss):", SwingConstants.RIGHT), rc);
         tfStartTime = new JTextField();
-        rc.gridx = 1; rc.gridy = r++; rc.weightx = 1.0;
-        right.add(tfStartTime, rc);
+        rc.gridx = 1;
+        rc.gridy = r++;
+        rc.weightx = 1.0;
+        panel.add(tfStartTime, rc);
 
-        rc.gridx = 0; rc.gridy = r;
-        right.add(new JLabel("End (yyyy-MM-dd HH:mm:ss):"), rc);
+        // End time
+        rc.gridx = 0;
+        rc.gridy = r;
+        panel.add(new JLabel("End (yyyy-MM-dd HH:mm:ss):", SwingConstants.RIGHT), rc);
         tfEndTime = new JTextField();
-        rc.gridx = 1; rc.gridy = r++; rc.weightx = 1.0;
-        right.add(tfEndTime, rc);
+        rc.gridx = 1;
+        rc.gridy = r++;
+        rc.weightx = 1.0;
+        panel.add(tfEndTime, rc);
 
+        // Hint label
+        rc.gridx = 0;
+        rc.gridy = r;
+        rc.gridwidth = 2;
+        JLabel hint = new JLabel("<html><i>Times must be in server timezone. Format: yyyy-MM-dd HH:mm:ss</i></html>");
+        hint.setForeground(Color.GRAY);
+        panel.add(hint, rc);
+        r++;
+
+        // Buttons: Activate / Deactivate / Load
         btnActivate = new JButton("Activate Window");
-        // Removed custom background/foreground color
+        btnActivate.setBackground(ADMIN_SECONDARY);
+        btnActivate.setForeground(Color.BLACK); // Black Text
         btnActivate.addActionListener(e -> activateWindow());
 
         btnDeactivate = new JButton("Deactivate Window");
-        // Removed custom background/foreground color
+        btnDeactivate.setBackground(ADMIN_PRIMARY);
+        btnDeactivate.setForeground(Color.BLACK); // Black Text
         btnDeactivate.addActionListener(e -> deactivateWindow());
 
         btnLoadWindow = new JButton("Refresh Status");
-        // Removed custom background/foreground color
+        btnLoadWindow.setBackground(ADMIN_ACCENT);
+        btnLoadWindow.setForeground(Color.BLACK); // Black Text
         btnLoadWindow.addActionListener(e -> loadWindow());
 
-        JPanel pButtons = new JPanel(new GridLayout(1,3,8,8));
+        JPanel pButtons = new JPanel(new GridLayout(1, 3, 15, 15));
+        pButtons.setBackground(BACKGROUND);
+        pButtons.setBorder(new EmptyBorder(10, 0, 0, 0));
         pButtons.add(btnActivate);
         pButtons.add(btnDeactivate);
         pButtons.add(btnLoadWindow);
 
-        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
-        right.add(pButtons, rc);
-        r++;
-
-        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
-        JLabel hint = new JLabel("<html><i>Note: times must be in server timezone.<br/>Format: yyyy-MM-dd HH:mm:ss</i></html>");
-        right.add(hint, rc);
-
-        return right;
-    }
-
-    private JPanel createResultsControlPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        // Removed custom background
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.BLACK), // Black border
-                "Election Results Control", TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 16), Color.BLACK // Black title text
-        ));
-
-        GridBagConstraints rc = new GridBagConstraints();
-        rc.insets = new Insets(8,8,8,8);
-        rc.anchor = GridBagConstraints.WEST;
-        rc.fill = GridBagConstraints.HORIZONTAL;
-
-        int r = 0;
-
-        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
-        lblResultsStatus = new JLabel("Results: unknown");
-        lblResultsStatus.setFont(new Font("Arial", Font.BOLD, 14));
-        // Removed custom foreground color
-        panel.add(lblResultsStatus, rc);
-        r++;
-
-        btnReleaseResults = new JButton("Release Results");
-        // Removed custom background/foreground color
-        btnReleaseResults.addActionListener(e -> releaseResults());
-
-        btnHideResults = new JButton("Hide Results");
-        // Removed custom background/foreground color
-        btnHideResults.addActionListener(e -> hideResults());
-
-        JPanel pButtons = new JPanel(new GridLayout(1,2,8,8));
-        pButtons.add(btnReleaseResults);
-        pButtons.add(btnHideResults);
-
-        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 2;
+        rc.gridx = 0;
+        rc.gridy = r;
+        rc.gridwidth = 2;
         panel.add(pButtons, rc);
-        r++;
 
         return panel;
     }
 
-    private JPanel createSystemControlPanel() {
+    /**
+     * Tab 3: Election Results Control Panel
+     */
+    private JPanel createResultsControlPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        // Removed custom background
-        panel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color.BLACK), // Black border
-                "System Maintenance", TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 16), Color.BLACK // Black title text
-        ));
+        panel.setBackground(BACKGROUND);
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         GridBagConstraints rc = new GridBagConstraints();
-        rc.insets = new Insets(8,8,8,8);
+        rc.insets = new Insets(10, 10, 10, 10);
         rc.anchor = GridBagConstraints.WEST;
         rc.fill = GridBagConstraints.HORIZONTAL;
 
         int r = 0;
 
-        btnPrepareNewElection = new JButton("PREPARE NEW ELECTION");
-        btnPrepareNewElection.setBackground(Color.RED); // Retained for warning
-        btnPrepareNewElection.setForeground(Color.WHITE); // Retained for warning
-        btnPrepareNewElection.setFont(new Font("Arial", Font.BOLD, 14));
+        // Current status
+        rc.gridx = 0;
+        rc.gridy = r;
+        rc.gridwidth = 2;
+        lblResultsStatus = new JLabel("Results: unknown");
+        lblResultsStatus.setFont(new Font("Arial", Font.BOLD, 18));
+        lblResultsStatus.setForeground(ADMIN_SECONDARY);
+        panel.add(lblResultsStatus, rc);
+        r++;
+
+        // Buttons: Release / Hide
+        btnReleaseResults = new JButton("RELEASE RESULTS");
+        btnReleaseResults.setFont(new Font("Arial", Font.BOLD, 14));
+        btnReleaseResults.setBackground(ADMIN_PRIMARY);
+        btnReleaseResults.setForeground(Color.BLACK); // Black Text
+        btnReleaseResults.addActionListener(e -> releaseResults());
+
+        btnHideResults = new JButton("Hide Results");
+        btnHideResults.setFont(new Font("Arial", Font.BOLD, 14));
+        btnHideResults.setBackground(ADMIN_ACCENT);
+        btnHideResults.setForeground(Color.BLACK); // Black Text
+        btnHideResults.addActionListener(e -> hideResults());
+
+        JPanel pButtons = new JPanel(new GridLayout(1, 2, 15, 15));
+        pButtons.setBackground(BACKGROUND);
+        pButtons.setBorder(new EmptyBorder(10, 0, 0, 0));
+        pButtons.add(btnReleaseResults);
+        pButtons.add(btnHideResults);
+
+        rc.gridx = 0;
+        rc.gridy = r;
+        rc.gridwidth = 2;
+        panel.add(pButtons, rc);
+
+        return panel;
+    }
+
+    //Tab 4: System Maintenance Panel
+    private JPanel createSystemControlPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(BACKGROUND);
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        GridBagConstraints rc = new GridBagConstraints();
+        rc.insets = new Insets(10, 10, 10, 10);
+        rc.anchor = GridBagConstraints.WEST;
+        rc.fill = GridBagConstraints.HORIZONTAL;
+
+        int r = 0;
+
+        // Button: Prepare New Election
+        btnPrepareNewElection = new JButton("WIPE DATA AND PREPARE NEW ELECTION");
+        btnPrepareNewElection.setFont(new Font("Arial", Font.BOLD, 16));
+        btnPrepareNewElection.setBackground(Color.RED.darker());
+        btnPrepareNewElection.setForeground(Color.BLACK); // Black Text
         btnPrepareNewElection.addActionListener(e -> prepareNewElection());
 
-        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 1; rc.weightx = 1.0;
+        rc.gridx = 0;
+        rc.gridy = r;
+        rc.gridwidth = 1;
+        rc.weightx = 1.0;
         panel.add(btnPrepareNewElection, rc);
         r++;
 
-        rc.gridx = 0; rc.gridy = r; rc.gridwidth = 1; rc.weightx = 1.0;
-        JLabel warning = new JLabel("<html><i style='color:red;'>WARNING: This deletes ALL candidates/votes and resets the window.</i></html>", SwingConstants.CENTER);
+        rc.gridx = 0;
+        rc.gridy = r;
+        rc.gridwidth = 1;
+        rc.weightx = 1.0;
+        JLabel warning = new JLabel("<html><i style='color:#E02729;'>WARNING: This action is PERMANENT. It deletes ALL candidates, ALL votes, and resets all election status flags.</i></html>", SwingConstants.CENTER);
         panel.add(warning, rc);
 
         return panel;
     }
-
 
     private void selectPicture() {
         JFileChooser fc = new JFileChooser();
@@ -512,7 +609,6 @@ public class AdminDashboard extends JFrame {
                 .forEach(File::delete);
     }
 
-    // FIX: Temporarily disable foreign key checks to allow TRUNCATE
     private void prepareNewElection() {
         int confirm = JOptionPane.showConfirmDialog(this,
                 "ARE YOU SURE? This will permanently delete ALL votes, ALL candidate data, and ALL manifesto folders.\n(Voter accounts will be kept intact.)",
@@ -538,27 +634,25 @@ public class AdminDashboard extends JFrame {
                 }
             }
 
-            // --- Database Cleanup with Foreign Key Checks Disabled ---
-            // This is the fix for the SQLSyntaxErrorException
+            //Database Cleanup
             try (PreparedStatement psDisableKeys = con.prepareStatement("SET FOREIGN_KEY_CHECKS=0")) {
                 psDisableKeys.executeUpdate();
             }
 
-            // 2. Delete all votes and reset auto-increment
+            //Deletes all votes and reset auto-increment
             try (PreparedStatement psVotes = con.prepareStatement("TRUNCATE TABLE votes")) {
                 psVotes.executeUpdate();
             }
 
-            // 3. Delete all candidates and reset auto-increment
+            //Deletes all candidates and reset auto-increment
             try (PreparedStatement psCandidates = con.prepareStatement("TRUNCATE TABLE candidates")) {
                 psCandidates.executeUpdate();
             }
 
-            // 4. Re-enable foreign key checks
+            //Re-enables foreign key checks
             try (PreparedStatement psEnableKeys = con.prepareStatement("SET FOREIGN_KEY_CHECKS=1")) {
                 psEnableKeys.executeUpdate();
             }
-            // --- End Database Cleanup ---
 
             // 5. Reset voting window status
             String resetSql = "UPDATE voting_window SET is_active=0, results_released=0";
