@@ -69,7 +69,7 @@ public class AdminDashboard extends JFrame {
         headerPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         // Title
-        JLabel titleLabel = new JLabel("Strathmore Voting System Console", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("Strathmore Voting System Admin Console", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
         titleLabel.setForeground(ADMIN_PRIMARY);
         headerPanel.add(titleLabel, BorderLayout.CENTER);
@@ -317,9 +317,7 @@ public class AdminDashboard extends JFrame {
         return panel;
     }
 
-    /**
-     * Tab 3: Election Results Control Panel
-     */
+    //Tab 3: Election Results Control Panel
     private JPanel createResultsControlPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(BACKGROUND);

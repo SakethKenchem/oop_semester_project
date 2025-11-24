@@ -1,6 +1,7 @@
 package ui;
 
 import database.DBConnection;
+
 import javax.swing.*;
 import java.awt.*;
 import java.sql.Connection;
@@ -108,7 +109,10 @@ public class LoginForm extends JFrame {
     }
 
     public static void main(String[] args) {
-        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch(Exception ignored){}
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {
+        }
         new LoginForm();
     }
 }

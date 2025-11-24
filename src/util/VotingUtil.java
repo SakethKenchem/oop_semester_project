@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 
 public class VotingUtil {
 
+    // Defines a structure to hold the current election status retrieved from the database.
     public static class VotingWindow {
         public final LocalDateTime start;
         public final LocalDateTime end;
@@ -24,12 +25,9 @@ public class VotingUtil {
         }
     }
 
-    /**
-     * Returns the active voting window and control status
-     */
+    // Fetches the single status row from the 'voting_window' table.
     public static VotingWindow getActiveWindow() {
         try (Connection con = DBConnection.getConnection()) {
-            // Updated SQL to fetch results_released
             String sql = "SELECT start_time, end_time, is_active, results_released FROM voting_window LIMIT 1";
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
@@ -38,20 +36,18 @@ public class VotingUtil {
             Timestamp tsStart = rs.getTimestamp("start_time");
             Timestamp tsEnd = rs.getTimestamp("end_time");
             boolean active = rs.getInt("is_active") == 1;
-            boolean released = rs.getInt("results_released") == 1; // Re-added fetch
+            boolean released = rs.getInt("results_released") == 1;
 
             if (tsStart == null || tsEnd == null) return null;
 
-            return new VotingWindow(tsStart.toLocalDateTime(), tsEnd.toLocalDateTime(), active, released); // Updated constructor call
+            return new VotingWindow(tsStart.toLocalDateTime(), tsEnd.toLocalDateTime(), active, released);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    /**
-     *is current time inside the active window?
-     */
+    // Checks if the current time is within the active voting window.
     public static boolean isVotingOpen() {
         try {
             VotingWindow w = getActiveWindow();
@@ -64,9 +60,7 @@ public class VotingUtil {
         }
     }
 
-    /**
-     *are the election results released?
-     */
+    // Checks if the election results have been released by the administrator.
     public static boolean isResultsReleased() {
         try {
             VotingWindow w = getActiveWindow();
@@ -77,6 +71,7 @@ public class VotingUtil {
         }
     }
 
+    // Updates the 'results_released' flag in the database.
     public static boolean updateResultsReleaseStatus(boolean released) {
         try (Connection con = DBConnection.getConnection()) {
             String checkSql = "SELECT id FROM voting_window LIMIT 1";
@@ -84,7 +79,6 @@ public class VotingUtil {
             ResultSet rs = psCheck.executeQuery();
             if (rs.next()) {
                 int id = rs.getInt("id");
-                // Update existing row
                 String upd = "UPDATE voting_window SET results_released=? WHERE id=?";
                 PreparedStatement psUpd = con.prepareStatement(upd);
                 psUpd.setInt(1, released ? 1 : 0);
@@ -92,7 +86,6 @@ public class VotingUtil {
                 psUpd.executeUpdate();
                 return true;
             } else {
-                // Insert a default row if it doesn't exist
                 String ins = "INSERT INTO voting_window(start_time, end_time, is_active, results_released) VALUES(NOW(),NOW(),0,?)";
                 PreparedStatement psIns = con.prepareStatement(ins);
                 psIns.setInt(1, released ? 1 : 0);

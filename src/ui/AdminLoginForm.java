@@ -60,48 +60,48 @@ public class AdminLoginForm extends JFrame {
         setVisible(true);
     }
 
-    private void doLogin(){
+    private void doLogin() {
         String username = tfUsername.getText().trim();
         String password = String.valueOf(pfPassword.getPassword()).trim();
 
-        if(username.isEmpty() || password.isEmpty()){
-            JOptionPane.showMessageDialog(this,"Enter username and password!");
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Enter username and password!");
             return;
         }
 
         String hashedPassword = hashPassword(password);
         Admin admin = new Admin(username, hashedPassword);
 
-        try(Connection con = DBConnection.getConnection()){
+        try (Connection con = DBConnection.getConnection()) {
             String sql = "SELECT * FROM admins WHERE username=? AND password=?";
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1, admin.getUsername());
             ps.setString(2, admin.getPasswordHash());
             ResultSet rs = ps.executeQuery();
 
-            if(rs.next()){
-                JOptionPane.showMessageDialog(this,"Login successful!");
+            if (rs.next()) {
+                JOptionPane.showMessageDialog(this, "Login successful!");
                 dispose();
                 new AdminDashboard(admin.getUsername());
-            }else{
-                JOptionPane.showMessageDialog(this,"Invalid credentials!");
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid credentials!");
             }
 
-        }catch(Exception ex){
-            JOptionPane.showMessageDialog(this,"Error: "+ex.getMessage());
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
         }
     }
 
-    private String hashPassword(String password){
-        try{
+    private String hashPassword(String password) {
+        try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] hashed = md.digest(password.getBytes("UTF-8"));
             StringBuilder sb = new StringBuilder();
-            for(byte b : hashed){
-                sb.append(String.format("%02x",b));
+            for (byte b : hashed) {
+                sb.append(String.format("%02x", b));
             }
             return sb.toString();
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }

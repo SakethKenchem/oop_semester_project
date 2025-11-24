@@ -143,7 +143,7 @@ public class VoterDashboard extends JFrame {
             statusLabel.setFont(new Font("Arial", Font.BOLD, 16));
             statusLabel.setForeground(votingOpen ? new Color(0, 150, 0) : Color.RED);
             statusLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            statusLabel.setBorder(new EmptyBorder(10,0,10,0));
+            statusLabel.setBorder(new EmptyBorder(10, 0, 10, 0));
             pCandidatesContainer.add(statusLabel);
 
             for (String pos : POSITIONS) {
@@ -195,7 +195,7 @@ public class VoterDashboard extends JFrame {
         if (icon != null && icon.getImage() != null) {
             Image img = icon.getImage().getScaledInstance(200, 200, Image.SCALE_SMOOTH);
             JLabel picLabel = new JLabel(new ImageIcon(img), SwingConstants.CENTER);
-            picLabel.setBorder(new EmptyBorder(10,0,0,0));
+            picLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
             panel.add(picLabel, BorderLayout.NORTH);
         } else {
             JLabel placeholder = new JLabel("Photo Unavailable", SwingConstants.CENTER);
@@ -233,7 +233,7 @@ public class VoterDashboard extends JFrame {
         btnVote.addActionListener(e -> castVote(c));
         btnVote.setEnabled(votingOpen);
         btnVote.setBackground(votingOpen ? VOTER_PRIMARY : Color.GRAY);
-        btnVote.setForeground(Color.WHITE);
+        btnVote.setForeground(Color.BLACK);
         buttons.add(btnVote);
 
         panel.add(buttons, BorderLayout.SOUTH);
@@ -264,7 +264,7 @@ public class VoterDashboard extends JFrame {
             header.setFont(new Font("Arial", Font.BOLD, 24));
             header.setForeground(VOTER_PRIMARY);
             header.setAlignmentX(Component.CENTER_ALIGNMENT);
-            header.setBorder(new EmptyBorder(20,0,20,0));
+            header.setBorder(new EmptyBorder(20, 0, 20, 0));
             pResultsContainer.add(header);
 
             try (Connection con = DBConnection.getConnection()) {
@@ -289,7 +289,7 @@ public class VoterDashboard extends JFrame {
                         psC.setString(1, pos);
                         ResultSet rsC = psC.executeQuery();
                         ArrayList<Candidate> posCandidates = new ArrayList<>();
-                        while(rsC.next()) {
+                        while (rsC.next()) {
                             posCandidates.add(new Candidate(
                                     rsC.getInt("id"), rsC.getString("full_name"), rsC.getString("academic_year"),
                                     rsC.getString("school"), rsC.getString("position"), rsC.getString("photo_path"),
@@ -312,10 +312,10 @@ public class VoterDashboard extends JFrame {
                             for (Candidate c : posCandidates) {
                                 int votes = 0;
                                 String voteSql = "SELECT COUNT(*) FROM votes WHERE candidate_id=?";
-                                try(PreparedStatement psV = con.prepareStatement(voteSql)) {
+                                try (PreparedStatement psV = con.prepareStatement(voteSql)) {
                                     psV.setInt(1, c.getId());
                                     ResultSet rsV = psV.executeQuery();
-                                    if(rsV.next()) votes = rsV.getInt(1);
+                                    if (rsV.next()) votes = rsV.getInt(1);
                                 }
 
                                 boolean isWinner = (c.getId() == winnerId && votes > 0);
@@ -346,7 +346,7 @@ public class VoterDashboard extends JFrame {
         if (isWinner) {
             panel.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(WINNER_COLOR, 4),
-                    new EmptyBorder(5,5,5,5)
+                    new EmptyBorder(5, 5, 5, 5)
             ));
         } else {
             panel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 1));
