@@ -95,6 +95,7 @@ public class AdminRegisterForm extends JFrame {
         }
     }
 
+    //sha 256 password hashing
     private String hashPassword(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

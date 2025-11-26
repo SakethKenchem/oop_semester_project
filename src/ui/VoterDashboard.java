@@ -8,6 +8,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.awt.GraphicsEnvironment;
+import java.awt.Rectangle;
 import java.io.File;
 import java.nio.file.Files;
 import java.sql.Connection;
@@ -23,13 +25,13 @@ public class VoterDashboard extends JFrame {
     private JPanel pCandidatesContainer;
     private JPanel pResultsContainer;
 
-    // Theme Colors (Voter Blue Theme)
+    // Theme Colors based on Strathmore Logo
     private static final Color VOTER_PRIMARY = new Color(0x4378BC);
     private static final Color VOTER_ACCENT = new Color(0x02338D);
     private static final Color BACKGROUND = new Color(250, 250, 250);
     private static final Color WINNER_COLOR = new Color(0, 150, 0); // Green for winner
 
-    // Centralized positions
+    // positions constant
     private static final String[] POSITIONS = {
             "Chairperson", "Vice Chairperson", "Secretary General", "Finance Rep",
             "Public Relations", "Male Academic Rep", "Female Academic Rep",
@@ -40,7 +42,10 @@ public class VoterDashboard extends JFrame {
         this.voterId = voterId;
 
         setTitle("Voter Dashboard - ID: " + voterId);
-        setSize(950, 750);
+        Rectangle bounds = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+        int maxWidth = bounds.width;
+        int maxHeight = bounds.height;
+        setSize(maxWidth, maxHeight);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
@@ -68,7 +73,7 @@ public class VoterDashboard extends JFrame {
         pResultsContainer.setLayout(new BoxLayout(pResultsContainer, BoxLayout.Y_AXIS));
         pResultsContainer.setBackground(BACKGROUND);
 
-        // 2. Add Scrolls
+        //Scrolls with scroll speed
         JScrollPane scrollCandidates = new JScrollPane(pCandidatesContainer);
         scrollCandidates.setBorder(null);
         scrollCandidates.getVerticalScrollBar().setUnitIncrement(16);
@@ -77,13 +82,13 @@ public class VoterDashboard extends JFrame {
         scrollResults.setBorder(null);
         scrollResults.getVerticalScrollBar().setUnitIncrement(16);
 
-        // 3. Add Tabs
+        //Tabs using TabbedPane
         tabbedPane.addTab("Vote for Candidates", scrollCandidates);
         tabbedPane.addTab("Election Results", scrollResults);
 
         add(tabbedPane, BorderLayout.CENTER);
 
-        // --- South Panel (Buttons) ---
+        //South Panel
         JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         southPanel.setBackground(BACKGROUND);
 
@@ -109,13 +114,13 @@ public class VoterDashboard extends JFrame {
         setVisible(true);
     }
 
-    // --- Data Refresh Logic ---
+    //Refresh Buttons logic
     private void refreshAllData() {
         loadCandidates();
         loadResults();
     }
 
-    // --- Tab 1: Load Candidates ---
+    //Tab 1: Load Candidates
     private void loadCandidates() {
         pCandidatesContainer.removeAll();
 
@@ -138,7 +143,7 @@ public class VoterDashboard extends JFrame {
 
             boolean votingOpen = VotingUtil.isVotingOpen();
 
-            // Add a status banner
+            // status banner for voting, OPEN or CLOSED
             JLabel statusLabel = new JLabel(votingOpen ? "Voting is currently OPEN" : "Voting is currently CLOSED");
             statusLabel.setFont(new Font("Arial", Font.BOLD, 16));
             statusLabel.setForeground(votingOpen ? new Color(0, 150, 0) : Color.RED);
@@ -185,7 +190,7 @@ public class VoterDashboard extends JFrame {
         panel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         panel.setBackground(Color.WHITE);
 
-        // Robust Image Loading
+        //Candidate Image Loading
         ImageIcon icon = null;
         File photoFile = new File(c.getPhotoPath());
         if (photoFile.exists()) {
@@ -241,7 +246,7 @@ public class VoterDashboard extends JFrame {
         return panel;
     }
 
-    // --- Tab 2: Load Results ---
+    //Tab 2: Load Results
     private void loadResults() {
         pResultsContainer.removeAll();
 
@@ -259,7 +264,7 @@ public class VoterDashboard extends JFrame {
             pResultsContainer.add(msgPanel);
 
         } else {
-            // Case: Results ARE released
+            //Results ARE released
             JLabel header = new JLabel("ELECTION RESULTS", SwingConstants.CENTER);
             header.setFont(new Font("Arial", Font.BOLD, 24));
             header.setForeground(VOTER_PRIMARY);
@@ -398,6 +403,7 @@ public class VoterDashboard extends JFrame {
         return panel;
     }
 
+    //method to download manifesto
     private void downloadManifesto(Candidate c) {
         try {
             File source = new File(c.getManifestoPath());
@@ -417,6 +423,7 @@ public class VoterDashboard extends JFrame {
         }
     }
 
+    //handles voting, prevents double voting
     private void castVote(Candidate c) {
         if (!VotingUtil.isVotingOpen()) {
             JOptionPane.showMessageDialog(this, "Voting is currently closed.");

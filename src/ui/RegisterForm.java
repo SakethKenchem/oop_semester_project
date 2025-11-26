@@ -105,6 +105,7 @@ public class RegisterForm extends JFrame {
     }
 
 
+    //sha 256 password hashing
     public static String hashPassword(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");

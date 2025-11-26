@@ -1,3 +1,4 @@
+import ui.LoginForm;
 import ui.RegisterForm;
 
 public class Voter {
@@ -7,6 +8,6 @@ public class Voter {
         } catch (Exception ignored) {
         }
 
-        new RegisterForm();
+        new LoginForm();
     }
 }

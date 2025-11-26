@@ -21,33 +21,25 @@ import java.util.Comparator;
 
 public class AdminDashboard extends JFrame {
 
-    // THEME COLORS (Admin)
-    private static final Color ADMIN_PRIMARY = new Color(0xE02729); // Red
-    private static final Color ADMIN_SECONDARY = new Color(0x4378BC); // Blue
-    private static final Color ADMIN_ACCENT = new Color(0xF4B218); // Amber
+    // THEME COLORS based on the Strathmore logo
+    private static final Color ADMIN_PRIMARY = new Color(0xE02729);
+    private static final Color ADMIN_SECONDARY = new Color(0x4378BC);
+    private static final Color ADMIN_ACCENT = new Color(0xF4B218);
     private static final Color BACKGROUND = new Color(250, 250, 250);
 
-    // Candidate Upload Fields
-    private JTextField tfFullName, tfAcademicYear, tfSchool;
+    // Fields for GUI components
+    private JTextField tfFullName, tfAcademicYear, tfSchool, tfStartTime, tfEndTime;
     private JTextArea taBio;
     private JComboBox<String> cbPosition;
-    private JLabel lblPicture, lblManifesto;
+    private JLabel lblPicture, lblManifesto, lblWindowStatus, lblResultsStatus;
     private File selectedPicture, selectedManifesto;
     private JButton btnUploadPicture, btnUploadManifesto, btnSave;
-
-    // Voting Control Fields
-    private JTextField tfStartTime, tfEndTime;
     private JButton btnActivate, btnDeactivate, btnLoadWindow;
-    private JLabel lblWindowStatus;
-
-    // Results Control Fields
     private JButton btnReleaseResults, btnHideResults;
-    private JLabel lblResultsStatus;
+    private JButton btnDeleteVotes, btnDeleteCandidates;
+    private JPanel pResultsDisplay;
 
-    // System Maintenance Fields
-    private JButton btnPrepareNewElection;
-
-    // Centralized Constants
+    // Constants
     private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final String[] POSITIONS = {
             "Chairperson", "Vice Chairperson", "Secretary General", "Finance Rep",
@@ -63,31 +55,22 @@ public class AdminDashboard extends JFrame {
         getContentPane().setBackground(BACKGROUND);
         setLayout(new BorderLayout());
 
-        // --- Header Panel with Logo ---
+        // Header Panel with Logo and Title
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(BACKGROUND);
         headerPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        // Title
-        JLabel titleLabel = new JLabel("Strathmore Voting System Admin Console", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("Administration Console", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
         titleLabel.setForeground(ADMIN_PRIMARY);
         headerPanel.add(titleLabel, BorderLayout.CENTER);
-
-        // Logo (Top Right)
         ImageIcon logoIcon = new ImageIcon("src/logo.png");
         if (logoIcon.getImage() != null) {
-
-            Image scaled = logoIcon.getImage().getScaledInstance(250, 100, Image.SCALE_SMOOTH);
-            JLabel logoLbl = new JLabel(new ImageIcon(scaled));
-            logoLbl.setBorder(new EmptyBorder(0, 10, 0, 0));
-            headerPanel.add(logoLbl, BorderLayout.EAST);
+            Image scaled = logoIcon.getImage().getScaledInstance(300, 150, Image.SCALE_SMOOTH);
+            headerPanel.add(new JLabel(new ImageIcon(scaled)), BorderLayout.EAST);
         }
-
         add(headerPanel, BorderLayout.NORTH);
-        // -----------------------------
 
-        // --- JTabbedPane Setup ---
+        // JTabbedPane Setup
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(new Font("Arial", Font.BOLD, 14));
         tabbedPane.setForeground(Color.BLACK);
@@ -101,131 +84,183 @@ public class AdminDashboard extends JFrame {
 
         add(tabbedPane, BorderLayout.CENTER);
 
-        loadWindow();
+        loadWindow(); // Initial status load
 
         setVisible(true);
     }
 
     //Tab 1: Upload Candidate Panel
-
     private JPanel createCandidateUploadPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(BACKGROUND);
         panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        int row = 0;
 
-        GridBagConstraints gc = new GridBagConstraints();
+        GridBagConstraints gc;
+
+        // --- Full Name ---
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
+        gc.gridx = 0;
+        gc.gridy = row;
+        gc.weightx = 0.0;
+        panel.add(new JLabel("Full Name:", SwingConstants.RIGHT), gc);
+
+        tfFullName = new JTextField();
+        gc = new GridBagConstraints();
         gc.insets = new Insets(8, 8, 8, 8);
         gc.anchor = GridBagConstraints.WEST;
         gc.fill = GridBagConstraints.HORIZONTAL;
-
-        int row = 0;
-
-        // Full Name
-        gc.gridx = 0;
-        gc.gridy = row;
-        gc.weightx = 0;
-        panel.add(new JLabel("Full Name:", SwingConstants.RIGHT), gc);
-        tfFullName = new JTextField();
         gc.gridx = 1;
         gc.gridy = row++;
         gc.weightx = 1.0;
         panel.add(tfFullName, gc);
 
-        // Academic Year
+        // --- Academic Year ---
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
         gc.gridx = 0;
         gc.gridy = row;
-        gc.weightx = 0;
+        gc.weightx = 0.0;
         panel.add(new JLabel("Academic Year:", SwingConstants.RIGHT), gc);
+
         tfAcademicYear = new JTextField();
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
+        gc.fill = GridBagConstraints.HORIZONTAL;
         gc.gridx = 1;
         gc.gridy = row++;
         gc.weightx = 1.0;
         panel.add(tfAcademicYear, gc);
 
-        // School
+        // --- School ---
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
         gc.gridx = 0;
         gc.gridy = row;
-        gc.weightx = 0;
+        gc.weightx = 0.0;
         panel.add(new JLabel("School:", SwingConstants.RIGHT), gc);
+
         tfSchool = new JTextField();
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
+        gc.fill = GridBagConstraints.HORIZONTAL;
         gc.gridx = 1;
         gc.gridy = row++;
         gc.weightx = 1.0;
         panel.add(tfSchool, gc);
 
-        // Position
+        // --- Position ---
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
         gc.gridx = 0;
         gc.gridy = row;
-        gc.weightx = 0;
+        gc.weightx = 0.0;
         panel.add(new JLabel("Position:", SwingConstants.RIGHT), gc);
+
         cbPosition = new JComboBox<>(POSITIONS);
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
+        gc.fill = GridBagConstraints.HORIZONTAL;
         gc.gridx = 1;
         gc.gridy = row++;
         gc.weightx = 1.0;
         panel.add(cbPosition, gc);
 
-        // Picture label + button
+        // --- Picture Upload ---
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
         gc.gridx = 0;
         gc.gridy = row;
-        gc.weightx = 0;
+        gc.weightx = 0.0;
         panel.add(new JLabel("Picture:", SwingConstants.RIGHT), gc);
-        JPanel pPic = new JPanel(new BorderLayout(6, 0));
-        pPic.setBackground(BACKGROUND);
-        lblPicture = new JLabel("No picture selected");
 
+        lblPicture = new JLabel("No picture selected");
         btnUploadPicture = new JButton("Choose...");
         btnUploadPicture.addActionListener(e -> selectPicture());
-
+        JPanel pPic = new JPanel(new BorderLayout(6, 0));
+        pPic.setBackground(BACKGROUND);
         pPic.add(lblPicture, BorderLayout.CENTER);
         pPic.add(btnUploadPicture, BorderLayout.EAST);
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
+        gc.fill = GridBagConstraints.HORIZONTAL;
         gc.gridx = 1;
         gc.gridy = row++;
         gc.weightx = 1.0;
         panel.add(pPic, gc);
 
-        // Manifesto label + button
+        // --- Manifesto Upload ---
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
         gc.gridx = 0;
         gc.gridy = row;
-        gc.weightx = 0;
+        gc.weightx = 0.0;
         panel.add(new JLabel("Manifesto:", SwingConstants.RIGHT), gc);
-        JPanel pMan = new JPanel(new BorderLayout(6, 0));
-        pMan.setBackground(BACKGROUND);
-        lblManifesto = new JLabel("No manifesto selected");
 
+        lblManifesto = new JLabel("No manifesto selected");
         btnUploadManifesto = new JButton("Choose...");
         btnUploadManifesto.addActionListener(e -> selectManifesto());
-
+        JPanel pMan = new JPanel(new BorderLayout(6, 0));
+        pMan.setBackground(BACKGROUND);
         pMan.add(lblManifesto, BorderLayout.CENTER);
         pMan.add(btnUploadManifesto, BorderLayout.EAST);
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
+        gc.fill = GridBagConstraints.HORIZONTAL;
         gc.gridx = 1;
         gc.gridy = row++;
         gc.weightx = 1.0;
         panel.add(pMan, gc);
 
-        // Bio
+        // --- Bio ---
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
         gc.gridx = 0;
         gc.gridy = row;
-        gc.weightx = 0;
+        gc.weightx = 0.0;
         panel.add(new JLabel("Bio:", SwingConstants.RIGHT), gc);
+
         taBio = new JTextArea(6, 20);
         taBio.setLineWrap(true);
         taBio.setWrapStyleWord(true);
         JScrollPane spBio = new JScrollPane(taBio);
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
+        gc.fill = GridBagConstraints.BOTH; // Fill vertically and horizontally for JTextArea
         gc.gridx = 1;
         gc.gridy = row++;
         gc.weightx = 1.0;
         panel.add(spBio, gc);
 
-        // Save button
+        // --- Save button ---
         btnSave = new JButton("Save Candidate");
         btnSave.setFont(new Font("Arial", Font.BOLD, 14));
         btnSave.setBackground(ADMIN_PRIMARY);
-        btnSave.setForeground(Color.BLACK); // Black Text
+        btnSave.setForeground(Color.BLACK);
         btnSave.addActionListener(e -> saveCandidate());
 
         JPanel pSave = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         pSave.setBackground(BACKGROUND);
         pSave.add(btnSave);
+
+        gc = new GridBagConstraints();
+        gc.insets = new Insets(8, 8, 8, 8);
+        gc.anchor = GridBagConstraints.WEST;
+        gc.fill = GridBagConstraints.HORIZONTAL;
         gc.gridx = 0;
         gc.gridy = row;
         gc.gridwidth = 2;
@@ -233,6 +268,7 @@ public class AdminDashboard extends JFrame {
 
         return panel;
     }
+
 
     //Tab 2: Voting Window Control Panel
     private JPanel createVotingControlPanel() {
@@ -246,10 +282,12 @@ public class AdminDashboard extends JFrame {
         rc.fill = GridBagConstraints.HORIZONTAL;
 
         int r = 0;
+
         // Current status
         rc.gridx = 0;
         rc.gridy = r;
         rc.gridwidth = 2;
+        rc.weightx = 1.0;
         lblWindowStatus = new JLabel("Status: unknown");
         lblWindowStatus.setFont(new Font("Arial", Font.BOLD, 18));
         lblWindowStatus.setForeground(ADMIN_PRIMARY);
@@ -260,17 +298,21 @@ public class AdminDashboard extends JFrame {
         rc.gridwidth = 1;
         rc.gridx = 0;
         rc.gridy = r;
+        rc.weightx = 0.0;
         panel.add(new JLabel("Start (yyyy-MM-dd HH:mm:ss):", SwingConstants.RIGHT), rc);
+        // Start time (Field)
         tfStartTime = new JTextField();
         rc.gridx = 1;
         rc.gridy = r++;
         rc.weightx = 1.0;
         panel.add(tfStartTime, rc);
 
-        // End time
+        // End time (Label)
         rc.gridx = 0;
         rc.gridy = r;
+        rc.weightx = 0.0;
         panel.add(new JLabel("End (yyyy-MM-dd HH:mm:ss):", SwingConstants.RIGHT), rc);
+        // End time (Field)
         tfEndTime = new JTextField();
         rc.gridx = 1;
         rc.gridy = r++;
@@ -286,20 +328,20 @@ public class AdminDashboard extends JFrame {
         panel.add(hint, rc);
         r++;
 
-        // Buttons: Activate / Deactivate / Load
+        // Buttons
         btnActivate = new JButton("Activate Window");
         btnActivate.setBackground(ADMIN_SECONDARY);
-        btnActivate.setForeground(Color.BLACK); // Black Text
+        btnActivate.setForeground(Color.BLACK);
         btnActivate.addActionListener(e -> activateWindow());
 
         btnDeactivate = new JButton("Deactivate Window");
         btnDeactivate.setBackground(ADMIN_PRIMARY);
-        btnDeactivate.setForeground(Color.BLACK); // Black Text
+        btnDeactivate.setForeground(Color.BLACK);
         btnDeactivate.addActionListener(e -> deactivateWindow());
 
         btnLoadWindow = new JButton("Refresh Status");
         btnLoadWindow.setBackground(ADMIN_ACCENT);
-        btnLoadWindow.setForeground(Color.BLACK); // Black Text
+        btnLoadWindow.setForeground(Color.BLACK);
         btnLoadWindow.addActionListener(e -> loadWindow());
 
         JPanel pButtons = new JPanel(new GridLayout(1, 3, 15, 15));
@@ -330,10 +372,11 @@ public class AdminDashboard extends JFrame {
 
         int r = 0;
 
-        // Current status
+        // Current status of election
         rc.gridx = 0;
         rc.gridy = r;
         rc.gridwidth = 2;
+        rc.weightx = 1.0;
         lblResultsStatus = new JLabel("Results: unknown");
         lblResultsStatus.setFont(new Font("Arial", Font.BOLD, 18));
         lblResultsStatus.setForeground(ADMIN_SECONDARY);
@@ -344,13 +387,13 @@ public class AdminDashboard extends JFrame {
         btnReleaseResults = new JButton("RELEASE RESULTS");
         btnReleaseResults.setFont(new Font("Arial", Font.BOLD, 14));
         btnReleaseResults.setBackground(ADMIN_PRIMARY);
-        btnReleaseResults.setForeground(Color.BLACK); // Black Text
+        btnReleaseResults.setForeground(Color.BLACK);
         btnReleaseResults.addActionListener(e -> releaseResults());
 
         btnHideResults = new JButton("Hide Results");
         btnHideResults.setFont(new Font("Arial", Font.BOLD, 14));
         btnHideResults.setBackground(ADMIN_ACCENT);
-        btnHideResults.setForeground(Color.BLACK); // Black Text
+        btnHideResults.setForeground(Color.BLACK);
         btnHideResults.addActionListener(e -> hideResults());
 
         JPanel pButtons = new JPanel(new GridLayout(1, 2, 15, 15));
@@ -363,6 +406,27 @@ public class AdminDashboard extends JFrame {
         rc.gridy = r;
         rc.gridwidth = 2;
         panel.add(pButtons, rc);
+        r++;
+
+        // Results Display Area (Shows winners when released)
+        pResultsDisplay = new JPanel();
+        pResultsDisplay.setLayout(new BoxLayout(pResultsDisplay, BoxLayout.Y_AXIS));
+        pResultsDisplay.setBackground(Color.WHITE);
+        pResultsDisplay.setBorder(BorderFactory.createTitledBorder(
+                new LineBorder(Color.GRAY), "Current Winners (Refreshed on Status Check)"
+        ));
+
+        JScrollPane scrollPane = new JScrollPane(pResultsDisplay);
+        scrollPane.setPreferredSize(new Dimension(400, 250));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        rc.gridx = 0;
+        rc.gridy = r;
+        rc.gridwidth = 2;
+        rc.fill = GridBagConstraints.BOTH;
+        rc.weighty = 1.0; // Fill and gives weight
+        panel.add(scrollPane, rc);
 
         return panel;
     }
@@ -380,29 +444,55 @@ public class AdminDashboard extends JFrame {
 
         int r = 0;
 
-        // Button: Prepare New Election
-        btnPrepareNewElection = new JButton("WIPE DATA AND PREPARE NEW ELECTION");
-        btnPrepareNewElection.setFont(new Font("Arial", Font.BOLD, 16));
-        btnPrepareNewElection.setBackground(Color.RED.darker());
-        btnPrepareNewElection.setForeground(Color.BLACK); // Black Text
-        btnPrepareNewElection.addActionListener(e -> prepareNewElection());
+        // Button: Delete All Votes
+        btnDeleteVotes = new JButton("DELETE ALL VOTES");
+        btnDeleteVotes.setFont(new Font("Arial", Font.BOLD, 16));
+        btnDeleteVotes.setBackground(ADMIN_SECONDARY.darker());
+        btnDeleteVotes.setForeground(Color.black);
+        btnDeleteVotes.addActionListener(e -> deleteOnlyVotes());
 
         rc.gridx = 0;
         rc.gridy = r;
         rc.gridwidth = 1;
         rc.weightx = 1.0;
-        panel.add(btnPrepareNewElection, rc);
+        panel.add(btnDeleteVotes, rc);
         r++;
 
+        // Warning for Votes
+        JLabel warningVotes = new JLabel("<html><i style='color:black;'>Only vote records are deleted. Candidates remain.</i></html>", SwingConstants.CENTER);
         rc.gridx = 0;
         rc.gridy = r;
         rc.gridwidth = 1;
         rc.weightx = 1.0;
-        JLabel warning = new JLabel("<html><i style='color:#E02729;'>WARNING: This action is PERMANENT. It deletes ALL candidates, ALL votes, and resets all election status flags.</i></html>", SwingConstants.CENTER);
-        panel.add(warning, rc);
+        panel.add(warningVotes, rc);
+        r++;
+
+        // Button: Delete Candidates and Files
+        btnDeleteCandidates = new JButton("DELETE CANDIDATES & FOLDERS");
+        btnDeleteCandidates.setFont(new Font("Arial", Font.BOLD, 16));
+        btnDeleteCandidates.setBackground(Color.RED.darker());
+        btnDeleteCandidates.setForeground(Color.BLACK);
+        btnDeleteCandidates.addActionListener(e -> deleteOnlyCandidates());
+
+        rc.gridx = 0;
+        rc.gridy = r;
+        rc.gridwidth = 1;
+        rc.weightx = 1.0;
+        panel.add(btnDeleteCandidates, rc);
+        r++;
+
+        // Warning for Candidates
+        JLabel warningCandidates = new JLabel("<html><i style='color:#E02729;'>WARNING: Candidates, photos, and manifestos are permanently deleted.</i></html>", SwingConstants.CENTER);
+        rc.gridx = 0;
+        rc.gridy = r;
+        rc.gridwidth = 1;
+        rc.weightx = 1.0;
+        panel.add(warningCandidates, rc);
+        r++;
 
         return panel;
     }
+
 
     private void selectPicture() {
         JFileChooser fc = new JFileChooser();
@@ -481,11 +571,13 @@ public class AdminDashboard extends JFrame {
             String sql = "SELECT id, start_time, end_time, is_active, results_released FROM voting_window ORDER BY id LIMIT 1";
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
+            boolean released = false;
+
             if (rs.next()) {
                 Timestamp tsStart = rs.getTimestamp("start_time");
                 Timestamp tsEnd = rs.getTimestamp("end_time");
                 boolean active = rs.getInt("is_active") == 1;
-                boolean released = rs.getInt("results_released") == 1;
+                released = rs.getInt("results_released") == 1;
 
                 tfStartTime.setText(tsStart.toLocalDateTime().format(DTF));
                 tfEndTime.setText(tsEnd.toLocalDateTime().format(DTF));
@@ -495,9 +587,13 @@ public class AdminDashboard extends JFrame {
                 lblWindowStatus.setText("Status: not set");
                 lblResultsStatus.setText("Results: not set");
             }
+
+            displayElectionWinners(released);
+
         } catch (Exception ex) {
             lblWindowStatus.setText("Status: error");
             lblResultsStatus.setText("Results: error");
+            displayElectionWinners(false);
         }
     }
 
@@ -598,6 +694,69 @@ public class AdminDashboard extends JFrame {
         }
     }
 
+    private void displayElectionWinners(boolean released) {
+        pResultsDisplay.removeAll();
+
+        if (!released) {
+            JLabel lbl = new JLabel("Results are currently HIDDEN from voters.");
+            lbl.setForeground(Color.GRAY);
+            lbl.setBorder(new EmptyBorder(10, 10, 10, 10));
+            pResultsDisplay.add(lbl);
+        } else {
+            //Calculate and display winners
+            try (Connection con = DBConnection.getConnection()) {
+
+                // Header for results
+                JLabel header = new JLabel("WINNERS (RESULTS RELEASED)", SwingConstants.LEFT);
+                header.setFont(new Font("Arial", Font.BOLD, 14));
+                header.setForeground(ADMIN_PRIMARY);
+                header.setBorder(new EmptyBorder(5, 10, 5, 10));
+                pResultsDisplay.add(header);
+
+                // Fetch winners for each position sequentially
+                for (String pos : POSITIONS) {
+
+                    // SQL to find the winner ID and total votes for the current position
+                    String winnerSql = "SELECT T1.candidate_id, T2.full_name, COUNT(T1.id) AS total_votes " +
+                            "FROM votes T1 " +
+                            "JOIN candidates T2 ON T1.candidate_id = T2.id " +
+                            "WHERE T1.position=? " +
+                            "GROUP BY T1.candidate_id, T2.full_name " +
+                            "ORDER BY total_votes DESC LIMIT 1";
+
+                    String winnerName = "No Votes Cast";
+                    int votes = 0;
+
+                    try (PreparedStatement psW = con.prepareStatement(winnerSql)) {
+                        psW.setString(1, pos);
+                        ResultSet rsW = psW.executeQuery();
+
+                        if (rsW.next()) {
+                            votes = rsW.getInt("total_votes");
+                            winnerName = rsW.getString("full_name");
+                        }
+
+                        // Display result entry
+                        JLabel resultEntry = new JLabel(
+                                " • " + pos + ": " + winnerName + (votes > 0 ? " (" + votes + " votes)" : "")
+                        );
+                        resultEntry.setBorder(new EmptyBorder(2, 15, 2, 10));
+                        resultEntry.setFont(new Font("Arial", Font.PLAIN, 12));
+                        pResultsDisplay.add(resultEntry);
+                    }
+                }
+            } catch (Exception e) {
+                JLabel error = new JLabel("Error calculating winners: " + e.getMessage());
+                error.setForeground(Color.RED);
+                pResultsDisplay.add(error);
+            }
+        }
+
+        pResultsDisplay.revalidate();
+        pResultsDisplay.repaint();
+    }
+
+
     private static void deleteDirectory(File directory) throws IOException {
         if (!directory.exists()) return;
 
@@ -607,10 +766,10 @@ public class AdminDashboard extends JFrame {
                 .forEach(File::delete);
     }
 
-    private void prepareNewElection() {
+    private void deleteOnlyVotes() {
         int confirm = JOptionPane.showConfirmDialog(this,
-                "ARE YOU SURE? This will permanently delete ALL votes, ALL candidate data, and ALL manifesto folders.\n(Voter accounts will be kept intact.)",
-                "CONFIRM DATA AND FOLDER DELETION",
+                "ARE YOU SURE? This will permanently delete ALL votes, but keep candidate data intact.",
+                "CONFIRM VOTE DELETION",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE);
 
@@ -618,51 +777,92 @@ public class AdminDashboard extends JFrame {
 
         try (Connection con = DBConnection.getConnection()) {
 
-            // 1. Get list of directories to delete
-            try (PreparedStatement ps = con.prepareStatement("SELECT photo_path FROM candidates")) {
-                ResultSet rs = ps.executeQuery();
-                while (rs.next()) {
-                    String path = rs.getString("photo_path");
-                    File photoFile = new File(path);
-                    File candidateDir = photoFile.getParentFile();
-
-                    if (candidateDir != null) {
-                        deleteDirectory(candidateDir);
-                    }
-                }
-            }
-
-            //Database Cleanup
+            // Disables foreign key checks to allow TRUNCATE
             try (PreparedStatement psDisableKeys = con.prepareStatement("SET FOREIGN_KEY_CHECKS=0")) {
                 psDisableKeys.executeUpdate();
             }
 
-            //Deletes all votes and reset auto-increment
+            // Delete all votes and reset auto-increment
             try (PreparedStatement psVotes = con.prepareStatement("TRUNCATE TABLE votes")) {
                 psVotes.executeUpdate();
             }
 
-            //Deletes all candidates and reset auto-increment
-            try (PreparedStatement psCandidates = con.prepareStatement("TRUNCATE TABLE candidates")) {
-                psCandidates.executeUpdate();
-            }
-
-            //Re-enables foreign key checks
+            // Re-enable foreign key checks
             try (PreparedStatement psEnableKeys = con.prepareStatement("SET FOREIGN_KEY_CHECKS=1")) {
                 psEnableKeys.executeUpdate();
             }
 
-            // 5. Reset voting window status
+            // Reset voting window status (Active/Released)
             String resetSql = "UPDATE voting_window SET is_active=0, results_released=0";
             try (PreparedStatement psWindow = con.prepareStatement(resetSql)) {
                 psWindow.executeUpdate();
             }
 
-            JOptionPane.showMessageDialog(this, "System successfully prepared for a new election.\n(Candidates, Votes, and Folders deleted, Window reset.)");
+            JOptionPane.showMessageDialog(this, "Successfully deleted all votes and reset the voting window status.");
             loadWindow();
 
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error preparing new election: " + ex.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error deleting votes: " + ex.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void deleteOnlyCandidates() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "ARE YOU SURE? This will permanently delete ALL candidates, their files, AND all vote records (as votes depend on candidates).",
+                "CONFIRM CANDIDATE DELETION",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        try (Connection con = DBConnection.getConnection()) {
+
+            // Gets list of directories to delete before truncating the table
+            try (PreparedStatement ps = con.prepareStatement("SELECT photo_path FROM candidates")) {
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    String path = rs.getString("photo_path");
+                    if (path != null && !path.isEmpty()) {
+                        File photoFile = new File(path);
+                        File candidateDir = photoFile.getParentFile();
+
+                        if (candidateDir != null) {
+                            deleteDirectory(candidateDir);
+                        }
+                    }
+                }
+            }
+
+            // Database Clean
+            try (PreparedStatement psDisableKeys = con.prepareStatement("SET FOREIGN_KEY_CHECKS=0")) {
+                psDisableKeys.executeUpdate();
+            }
+
+            // Delete all votes first
+            try (PreparedStatement psVotes = con.prepareStatement("TRUNCATE TABLE votes")) {
+                psVotes.executeUpdate();
+            }
+
+            // Delete all candidates and reset auto-increment
+            try (PreparedStatement psCandidates = con.prepareStatement("TRUNCATE TABLE candidates")) {
+                psCandidates.executeUpdate();
+            }
+
+            try (PreparedStatement psEnableKeys = con.prepareStatement("SET FOREIGN_KEY_CHECKS=1")) {
+                psEnableKeys.executeUpdate();
+            }
+
+            //Reset voting window status
+            String resetSql = "UPDATE voting_window SET is_active=0, results_released=0";
+            try (PreparedStatement psWindow = con.prepareStatement(resetSql)) {
+                psWindow.executeUpdate();
+            }
+
+            JOptionPane.showMessageDialog(this, "Successfully deleted all candidates, their files, and all associated votes. Window reset.");
+            loadWindow();
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error deleting candidates: " + ex.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

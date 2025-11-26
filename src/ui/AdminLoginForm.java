@@ -16,6 +16,7 @@ public class AdminLoginForm extends JFrame {
     JPasswordField pfPassword;
     JButton btnLogin, btnRegister;
 
+    //gui for login
     public AdminLoginForm() {
         setTitle("Admin Login");
         setSize(400, 300);
@@ -60,6 +61,7 @@ public class AdminLoginForm extends JFrame {
         setVisible(true);
     }
 
+    //method that handles login
     private void doLogin() {
         String username = tfUsername.getText().trim();
         String password = String.valueOf(pfPassword.getPassword()).trim();
@@ -92,6 +94,7 @@ public class AdminLoginForm extends JFrame {
         }
     }
 
+    //hashes password before inserting into database
     private String hashPassword(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
